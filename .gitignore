@@ -1,3 +1,9 @@
+# legacy java code
+legacy_java/
+
+# do not commit data files
+data/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

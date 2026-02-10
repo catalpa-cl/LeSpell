@@ -1,0 +1,21 @@
+# Manifest for lespell package
+
+include README.md
+include LICENSE
+include pyproject.toml
+include poetry.lock
+
+recursive-include lespell *.py
+recursive-include tests *.py
+recursive-include docs *.rst *.md
+
+exclude data/
+exclude data_prep/
+exclude python_analysis/
+exclude python_languageTool/
+exclude spelling/
+
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude *$py.class
+global-exclude .DS_Store

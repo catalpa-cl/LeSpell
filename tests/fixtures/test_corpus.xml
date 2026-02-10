@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<corpus name="test_corpus">
+    <spelling_text id="test_001" lang="en">This is <error correct="a" type="article">the</error> test text with <grammar_error correct="an">a</grammar_error> error.</spelling_text>
+    <spelling_text id="test_002" lang="en">Anothr <error correct="Another" type="spelling">Anothr</error> test text.</spelling_text>
+    <spelling_text id="test_003" lang="de">Das ist ein Testtext.</spelling_text>
+</corpus>
