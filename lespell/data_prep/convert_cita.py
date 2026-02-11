@@ -8,9 +8,9 @@ Transform the CItA-Corpus into the spelling-XML-file format:
     (but the target token remains the same for both))
 """
 
-import xml.etree.ElementTree as ET
-import re
 import os
+import re
+import xml.etree.ElementTree as ET
 
 corpus_path = "raw_corpora/cita-corrected/"
 
@@ -39,12 +39,12 @@ for year_folder in ["I-year/", "II-year/"]:
 
         #create sub element for each text with text ID as attribute
         text = ET.SubElement(corpus, "text")
-        text.set("id", re.sub("\.txt", "", year_folder+file))
+        text.set("id", re.sub(r"\.txt", "", year_folder+file))
         text.set("lang", "it")
 
         #add the text that appears until the first markup <M>
         text.text = orig_root.text
-        if text.text != None and not text.text.endswith(" "):
+        if text.text is not None and not text.text.endswith(" "):
             text.text += " "
 
         #collects all XML elements that contain our spelling error markups
@@ -62,7 +62,7 @@ for year_folder in ["I-year/", "II-year/"]:
                     error = ET.Element("grammar_error")
 
                 #split orig tokens at " " or "'": if target has same number of tokens, align
-                if orig_err.text != None and (" " in orig_err.text or "'" in orig_err.text):
+                if orig_err.text is not None and (" " in orig_err.text or "'" in orig_err.text):
                     #print(orig_err.text, ">>", orig_err.attrib["c"], year_folder, file)
                     if " " in orig_err.text:
                         merge_orig = orig_err.text.strip().split(" ")
@@ -84,7 +84,7 @@ for year_folder in ["I-year/", "II-year/"]:
 
                         if len(merge_orig) == len(merge_target): #actually no merge error but multiple tokens annotated in original CItA
                             error.set("correct", merge_target[i])
-                            
+
                         else:
                             error.set("correct", orig_err.attrib["c"])
 

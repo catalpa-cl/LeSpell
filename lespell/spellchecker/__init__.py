@@ -17,13 +17,12 @@ from lespell.spellchecker.candidates import (
     MissingSpaceCandidateGenerator,
 )
 from lespell.spellchecker.detection import (
-    ErrorDetector,
-    DictionaryErrorDetector,
     CompositeErrorDetector,
+    DictionaryErrorDetector,
+    ErrorDetector,
 )
 from lespell.spellchecker.errors import SpellingError
-
-from lespell.spellchecker.ranking import Ranker, CostBasedRanker
+from lespell.spellchecker.ranking import CostBasedRanker, Ranker
 from lespell.spellchecker.spellchecker import SpellingChecker
 
 __all__ = [

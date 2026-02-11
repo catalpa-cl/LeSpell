@@ -1,7 +1,7 @@
 """Evaluation metrics for spelling correction."""
 
-from typing import List, Dict, Set, Tuple, Optional
 import json
+from typing import Dict, List, Set, Tuple
 
 
 class CorrectionEvaluator:

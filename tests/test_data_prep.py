@@ -1,8 +1,9 @@
 """Tests for data preparation converters."""
 
-import pytest
 import tempfile
 from pathlib import Path
+
+import pytest
 
 from lespell.data_prep import CitaConverter, LitkeyConverter, ToeflConverter
 

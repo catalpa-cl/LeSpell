@@ -5,10 +5,10 @@ LitKey uses aligned token markup where corrections are marked with attributes.
 
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import List, Union
 
-from lespell.io import SpellingItem
 from lespell.data_prep.base import BaseConverter
+from lespell.io import SpellingItem
 
 
 class LitkeyConverter(BaseConverter):

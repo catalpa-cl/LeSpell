@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Batch spell checking example with SpellingItem."""
 
-from lespell.spellchecker import (
-    SpellingChecker,
-    LevenshteinCandidateGenerator,
-    HunspellCandidateGenerator,
-    CostBasedRanker,
-    DictionaryErrorDetector,
-)
 from lespell.integrations import HunspellWrapper
 from lespell.io import SpellingItem
+from lespell.spellchecker import (
+    CostBasedRanker,
+    DictionaryErrorDetector,
+    HunspellCandidateGenerator,
+    LevenshteinCandidateGenerator,
+    SpellingChecker,
+)
 
 
 def main():

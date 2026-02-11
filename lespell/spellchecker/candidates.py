@@ -1,12 +1,10 @@
 """Candidate generation strategies for spelling correction."""
 
+import os
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Set, Tuple
-import os
 
 from rapidfuzz import distance
-
-from lespell.spellchecker.annotations import Text, Annotation
 
 
 class CandidateGenerator(ABC):
@@ -43,7 +41,7 @@ class HunspellCandidateGenerator(CandidateGenerator):
 
     def __init__(self, hunspell_wrapper):
         """Initialize Hunspell candidate generator.
-        
+
         Args:
             hunspell_wrapper: Configured HunspellWrapper instance from lespell.integrations
         """
@@ -66,7 +64,7 @@ class LanguageToolCandidateGenerator(CandidateGenerator):
 
     def __init__(self, languagetool_wrapper):
         """Initialize LanguageTool candidate generator.
-        
+
         Args:
             languagetool_wrapper: Configured LanguageToolWrapper instance from lespell.integrations
         """
@@ -79,16 +77,16 @@ class LanguageToolCandidateGenerator(CandidateGenerator):
         self, misspelled: str, context: Optional[str] = None
     ) -> List[Tuple[str, float]]:
         """Generate candidates using LanguageTool.
-        
-        Detects the misspelled word in context (or just the word itself) 
+
+        Detects the misspelled word in context (or just the word itself)
         and gets suggestions from LanguageTool.
         """
         if not context:
             context = misspelled
-        
+
         # Check the context to find errors and get suggestions
         errors = self.languagetool.check(context)
-        
+
         suggestions = []
         for error in errors:
             # Look for suggestions that might match our word
@@ -97,7 +95,7 @@ class LanguageToolCandidateGenerator(CandidateGenerator):
                 # Add suggestions with equal cost
                 for replacement in error["replacements"]:
                     suggestions.append((replacement, 1.0))
-        
+
         return suggestions
 
 
@@ -117,7 +115,7 @@ class RapidFuzzLevenshteinCandidateGenerator(CandidateGenerator):
         cutoff: float = 0.6,
     ):
         """Initialize RapidFuzz Levenshtein candidate generator.
-        
+
         Args:
             language: Language code (default: 'en')
             dictionary: Path-like, Set[str], or List[Set[str]].
@@ -125,26 +123,26 @@ class RapidFuzzLevenshteinCandidateGenerator(CandidateGenerator):
                        Set[str] uses directly, List[Set[str]] merges all
             max_candidates: Maximum number of suggestions to return
             cutoff: Minimum similarity score (0.0-1.0) to include candidates
-            
+
         Raises:
             ValueError: If dictionary not provided
             FileNotFoundError: If path doesn't exist
         """
         super().__init__(language)
-        
+
         if dictionary is None:
             raise ValueError(
                 "RapidFuzzLevenshteinCandidateGenerator requires a dictionary. "
                 "Provide path-like, Set[str], or List[Set[str]]."
             )
-        
+
         self.max_candidates = max_candidates
         self.cutoff = cutoff
         self.dictionary_path = None
-        
+
         # Load dictionary
         merged = set()
-        
+
         if isinstance(dictionary, list):
             for d in dictionary:
                 if isinstance(d, set):
@@ -164,14 +162,14 @@ class RapidFuzzLevenshteinCandidateGenerator(CandidateGenerator):
             raise TypeError(
                 f"dictionary must be path-like, Set[str], or List[Set[str]], got {type(dictionary)}"
             )
-        
+
         self.dictionary = merged
 
     def generate(
         self, misspelled: str, context: Optional[str] = None
     ) -> List[Tuple[str, float]]:
         """Generate candidates using rapidfuzz Levenshtein distance.
-        
+
         Uses C-optimized unweighted distance and returns candidates
         normalized to cost (inverse similarity).
         """
@@ -179,7 +177,7 @@ class RapidFuzzLevenshteinCandidateGenerator(CandidateGenerator):
             return []
 
         misspelled_lower = misspelled.lower()
-        
+
         # Use rapidfuzz to score all dictionary words
         candidates = []
         for word in self.dictionary:
@@ -187,7 +185,7 @@ class RapidFuzzLevenshteinCandidateGenerator(CandidateGenerator):
             similarity = distance.Levenshtein.normalized_similarity(
                 misspelled_lower, word
             )
-            
+
             if similarity >= self.cutoff:
                 # Convert similarity to cost (lower is better)
                 cost = 1.0 - similarity
@@ -218,7 +216,7 @@ class LevenshteinCandidateGenerator(CandidateGenerator):
         max_candidates: int = 10,
     ):
         """Initialize Levenshtein candidate generator.
-        
+
         Args:
             language: Language code (default: 'en')
             dictionary: Path-like, Set[str], or List[Set[str]].
@@ -230,19 +228,19 @@ class LevenshteinCandidateGenerator(CandidateGenerator):
             transposition_weight: Cost of character transposition
             default_weight: Default edit operation cost
             max_candidates: Maximum number of suggestions to return
-            
+
         Raises:
             ValueError: If dictionary not provided
             FileNotFoundError: If path doesn't exist
         """
         super().__init__(language)
-        
+
         if dictionary is None:
             raise ValueError(
                 "LevenshteinCandidateGenerator requires a dictionary. "
                 "Provide path-like, Set[str], or List[Set[str]]."
             )
-        
+
         self.deletion_weight = deletion_weight
         self.insertion_weight = insertion_weight
         self.substitution_weight = substitution_weight
@@ -250,10 +248,10 @@ class LevenshteinCandidateGenerator(CandidateGenerator):
         self.default_weight = default_weight
         self.max_candidates = max_candidates
         self.dictionary_path = None
-        
+
         # Load dictionary
         merged = set()
-        
+
         if isinstance(dictionary, list):
             for d in dictionary:
                 if isinstance(d, set):
@@ -273,7 +271,7 @@ class LevenshteinCandidateGenerator(CandidateGenerator):
             raise TypeError(
                 f"dictionary must be path-like, Set[str], or List[Set[str]], got {type(dictionary)}"
             )
-        
+
         self.dictionary = merged
 
     def _load_dictionary(self, path: str) -> None:
@@ -346,7 +344,7 @@ class KeyboardDistanceCandidateGenerator(CandidateGenerator):
         max_candidates: int = 10,
     ):
         """Initialize keyboard distance candidate generator.
-        
+
         Args:
             language: Language code (default: 'en')
             dictionary: Path-like, Set[str], or List[Set[str]].
@@ -357,7 +355,7 @@ class KeyboardDistanceCandidateGenerator(CandidateGenerator):
             max_candidates: Maximum number of suggestions to return
         """
         super().__init__(language)
-        
+
         self.keyboard_matrix_path = keyboard_matrix_path
         self.default_distance = default_distance
         self.max_candidates = max_candidates
@@ -368,7 +366,7 @@ class KeyboardDistanceCandidateGenerator(CandidateGenerator):
         # Load dictionary if provided
         if dictionary is not None:
             merged = set()
-            
+
             if isinstance(dictionary, list):
                 for d in dictionary:
                     if isinstance(d, set):
@@ -388,9 +386,9 @@ class KeyboardDistanceCandidateGenerator(CandidateGenerator):
                 raise TypeError(
                     f"dictionary must be path-like, Set[str], or List[Set[str]], got {type(dictionary)}"
                 )
-            
+
             self.dictionary = merged
-        
+
         if keyboard_matrix_path:
             self._load_keyboard_matrix(keyboard_matrix_path)
 
@@ -457,7 +455,7 @@ class PhonemeCandidateGenerator(CandidateGenerator):
         max_candidates: int = 10,
     ):
         """Initialize phoneme candidate generator.
-        
+
         Args:
             language: Language code (default: 'en')
             dictionary: Path-like, Set[str], or List[Set[str]].
@@ -465,27 +463,27 @@ class PhonemeCandidateGenerator(CandidateGenerator):
                        Set[str] uses directly, List[Set[str]] merges all
             phoneme_weight_path: Path to phoneme weight matrix
             max_candidates: Maximum number of suggestions to return
-            
+
         Raises:
             ValueError: If dictionary not provided
             FileNotFoundError: If path doesn't exist
         """
         super().__init__(language)
-        
+
         if dictionary is None:
             raise ValueError(
                 "PhonemeCandidateGenerator requires a dictionary. "
                 "Provide path-like, Set[str], or List[Set[str]]."
             )
-        
+
         self.phoneme_weight_path = phoneme_weight_path
         self.max_candidates = max_candidates
         self.g2p_cache: Dict[str, str] = {}
         self.dictionary_path = None
-        
+
         # Load dictionary
         merged = set()
-        
+
         if isinstance(dictionary, list):
             for d in dictionary:
                 if isinstance(d, set):
@@ -505,7 +503,7 @@ class PhonemeCandidateGenerator(CandidateGenerator):
             raise TypeError(
                 f"dictionary must be path-like, Set[str], or List[Set[str]], got {type(dictionary)}"
             )
-        
+
         self.dictionary = merged
 
     def _load_dictionary(self, path: str) -> None:
@@ -545,7 +543,7 @@ class PhonemeCandidateGenerator(CandidateGenerator):
 
 class MissingSpaceCandidateGenerator(CandidateGenerator):
     """Detect and suggest words with missing spaces.
-    
+
     REQUIRES a dictionary to function.
     """
 
@@ -559,7 +557,7 @@ class MissingSpaceCandidateGenerator(CandidateGenerator):
         max_candidates: int = 5,
     ):
         """Initialize missing space candidate generator.
-        
+
         Args:
             language: Language code (default: 'en')
             dictionary_path: Path to dictionary file (one word per line)
@@ -567,24 +565,24 @@ class MissingSpaceCandidateGenerator(CandidateGenerator):
             min_word_length: Minimum word length to consider
             space_insertion_cost: Cost of insertion (used in DP)
             max_candidates: Maximum number of suggestions to return
-            
+
         Raises:
             ValueError: If neither dictionary_path nor dictionary is provided
         """
         super().__init__(language)
-        
+
         # Validate that at least one dictionary source is provided
         if dictionary_path is None and dictionary is None:
             raise ValueError(
                 "MissingSpaceCandidateGenerator REQUIRES a dictionary. "
                 "Provide either 'dictionary_path' (file path) or 'dictionary' (set of words)."
             )
-        
+
         self.dictionary_path = dictionary_path
         self.min_word_length = min_word_length
         self.space_insertion_cost = space_insertion_cost
         self.max_candidates = max_candidates
-        
+
         # Load dictionary from provided source
         if dictionary is not None:
             self.dictionary = dictionary

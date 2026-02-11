@@ -1,7 +1,7 @@
 """Simple dict-based annotation and pipeline system."""
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List
 
 
 @dataclass

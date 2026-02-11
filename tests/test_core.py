@@ -1,6 +1,5 @@
 """Tests for core data structures."""
 
-import pytest
 
 from lespell.io import SpellingItem
 

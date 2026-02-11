@@ -8,9 +8,9 @@ Tokens with merge-errors each get their own error tag but the target token is th
 <error correct="mitnehmen" type="merge_left">mit</error> <error correct="mitnehmen" type="merge_right">nehmen</error>
 """
 
-import xml.etree.ElementTree as ET
-import re
 import os
+import re
+import xml.etree.ElementTree as ET
 
 corpus_path = "raw_corpora/litkey-xml/"
 
@@ -26,7 +26,7 @@ for file in sorted(os.listdir(corpus_path)):
     # initialize collection of correct tokens at the beginning of a text
     # create sub element for each text with text ID as attribute
     text = ET.SubElement(corpus, "text")
-    text.set("id", re.sub("\.xml", "", file))
+    text.set("id", re.sub(r"\.xml", "", file))
     text.set("lang", "de")
     text.text = None
 
@@ -51,21 +51,21 @@ for file in sorted(os.listdir(corpus_path)):
                 target_list = []
                 split_error_list = []
 
-                orig_list.append(re.sub("\|", "", orig))
+                orig_list.append(re.sub(r"\|", "", orig))
                 target_list.append(target)
                 split_error_list.extend([err.get("cat_fine") for errors in token.findall("errors") for err in errors.findall("err")])
 
                 index2 = index+1
                 while root.findall("token")[index2].get("orig").endswith("|"):
                     current_token = root.findall("token")[index2]
-                    orig_list.append(re.sub("\|", "", current_token.get("orig")))
+                    orig_list.append(re.sub(r"\|", "", current_token.get("orig")))
                     target_list.append(current_token.get("target"))
                     split_error_list.extend([err.get("cat_fine") for errors in current_token.findall("errors") for err in
                                 errors.findall("err")])
                     index2 += 1
 
                 current_token = root.findall("token")[index2]
-                orig_list.append(re.sub("\|", "", current_token.get("orig")))
+                orig_list.append(re.sub(r"\|", "", current_token.get("orig")))
                 target_list.append(current_token.get("target"))
                 split_error_list.extend([err.get("cat_fine") for errors in current_token.findall("errors") for err in
                                          errors.findall("err")])
@@ -152,12 +152,12 @@ for file in sorted(os.listdir(corpus_path)):
 
 
         else:
-            if len(errorlist) == 0 and text.text != None:
+            if len(errorlist) == 0 and text.text is not None:
                 text.text += orig + " "
-            elif len(errorlist) == 0 and text.text == None:
+            elif len(errorlist) == 0 and text.text is None:
                 text.text = orig + " "
             else:
-                if errorlist[-1].tail != None:
+                if errorlist[-1].tail is not None:
                     errorlist[-1].tail += orig + " "
                 else:
                     errorlist[-1].tail = orig + " "

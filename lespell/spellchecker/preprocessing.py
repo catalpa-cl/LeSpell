@@ -1,10 +1,10 @@
 """Preprocessing components for spelling correction."""
 
-from typing import Dict, Optional, Set
 import os
 import re
+from typing import Optional
 
-from lespell.spellchecker.annotations import Text, Annotation
+from lespell.spellchecker.annotations import Annotation, Text
 
 
 class PreprocessingPipeline:

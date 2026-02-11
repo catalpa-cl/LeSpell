@@ -1,7 +1,7 @@
 """Candidate ranking and reranking strategies."""
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 
 class Ranker(ABC):

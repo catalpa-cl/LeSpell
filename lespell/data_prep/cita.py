@@ -2,20 +2,19 @@
 
 The CItA corpus marks errors with <M> elements:
     <M t="20" c="compiti">conpiti</M>
-    
+
 Where t is error type (20-25 are spelling, others are grammar).
 Type mapping:
     20-25: Spelling errors -> <error>
     Others: Grammar/other errors -> <grammar_error>
 """
 
-import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List, Union
 
-from lespell.io import SpellingItem
 from lespell.data_prep.base import BaseConverter
+from lespell.io import SpellingItem
 
 
 class CitaConverter(BaseConverter):

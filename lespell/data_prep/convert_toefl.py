@@ -1,7 +1,5 @@
 import xml.etree.ElementTree as ET
-import re
-import os
-import html
+
 import pandas as pd
 
 annotations_file = "raw_corpora/ETS_Corpus_of_Non-Native_Written_English/Annotations.tsv"
@@ -29,7 +27,7 @@ for row in content.iterrows():
     start = int(offset.split("-")[0])
     end = int(offset.split("-")[1])
     type = row[1]['Type']
-    misspelling = row[1]['Misspelling'] 
+    misspelling = row[1]['Misspelling']
     correction = row[1]['Correction']
     print(textId)
     if (textId == lastTextId):

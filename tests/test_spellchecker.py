@@ -2,13 +2,13 @@
 
 import unittest
 
+from lespell.io import SpellingItem
 from lespell.spellchecker import (
-    SpellingChecker,
-    LevenshteinCandidateGenerator,
     CostBasedRanker,
     DictionaryErrorDetector,
+    LevenshteinCandidateGenerator,
+    SpellingChecker,
 )
-from lespell.io import SpellingItem
 
 
 def create_test_dictionary_set():
@@ -36,10 +36,10 @@ class TestSpellingChecker(unittest.TestCase):
             max_candidates=10,
         )
         self.ranker = CostBasedRanker()
-        
+
         # Create detector with the dictionary
         self.detector = DictionaryErrorDetector(dictionary=dictionary)
-        
+
         self.checker = SpellingChecker(
             detector=self.detector,
             candidate_generators=[self.generator],
@@ -105,11 +105,11 @@ class TestSpellingChecker(unittest.TestCase):
             substitution_weight=1.0,
             max_candidates=5,
         )
-        
+
         detector = DictionaryErrorDetector.__new__(DictionaryErrorDetector)
         detector.dictionary = dictionary
         detector.dictionary_path = None
-        
+
         checker = SpellingChecker(
             detector=detector,
             candidate_generators=[generator],
@@ -134,7 +134,7 @@ class TestSpellingChecker(unittest.TestCase):
         """Test that LevenshteinCandidateGenerator requires a dictionary."""
         with self.assertRaises(ValueError) as context:
             LevenshteinCandidateGenerator(language="en")
-        
+
         self.assertIn("REQUIRES a dictionary", str(context.exception))
 
     def test_levenshtein_accepts_dict_parameter(self):

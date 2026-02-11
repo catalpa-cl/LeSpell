@@ -1,11 +1,11 @@
 """Error detection components for spelling correction."""
 
-from abc import ABC, abstractmethod
-from typing import List, Optional, Set, Tuple
 import os
 import re
+from abc import ABC, abstractmethod
+from typing import List, Tuple
 
-from lespell.spellchecker.annotations import Text, Annotation
+from lespell.spellchecker.annotations import Annotation, Text
 from lespell.spellchecker.errors import SpellingError
 
 

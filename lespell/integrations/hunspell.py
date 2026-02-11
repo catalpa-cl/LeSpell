@@ -1,11 +1,11 @@
 """Hunspell integration for error detection and candidate generation."""
 
-from typing import List, Tuple, Optional
 import re
+from typing import List, Optional, Tuple
 
-from lespell.spellchecker.annotations import Text, Annotation
-from lespell.spellchecker.errors import SpellingError
+from lespell.spellchecker.annotations import Annotation, Text
 from lespell.spellchecker.detection import ErrorDetector
+from lespell.spellchecker.errors import SpellingError
 
 try:
     import hunspell

@@ -1,12 +1,12 @@
 """Main spelling checker orchestrator."""
 
-from typing import List, Optional, Dict, Tuple
+from typing import Dict, List, Optional
 
-from lespell.spellchecker.annotations import Text, Annotation
+from lespell.io import SpellingItem
+from lespell.spellchecker.annotations import Text
 from lespell.spellchecker.candidates import CandidateGenerator
 from lespell.spellchecker.detection import ErrorDetector
-from lespell.spellchecker.ranking import Ranker, CostBasedRanker
-from lespell.io import SpellingItem
+from lespell.spellchecker.ranking import CostBasedRanker, Ranker
 
 
 class SpellingChecker:

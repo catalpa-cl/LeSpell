@@ -1,15 +1,14 @@
 """Tests for error detection components."""
 
-import tempfile
 import os
+import tempfile
 import unittest
 
 from lespell.spellchecker import (
-    DictionaryErrorDetector,
     CompositeErrorDetector,
+    DictionaryErrorDetector,
     SpellingError,
 )
-from lespell.integrations import HunspellErrorDetector
 from lespell.spellchecker.annotations import Text
 
 

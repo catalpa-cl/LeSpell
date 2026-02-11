@@ -21,7 +21,7 @@ from lespell.io import SpellingItem
 
 class BaseConverter(ABC):
     """Abstract base class for corpus converters.
-    
+
     Converters transform various learner corpus formats into standardized
     SpellingItem objects. Each converter handles a specific corpus format
     and expects input data in the appropriate structure.

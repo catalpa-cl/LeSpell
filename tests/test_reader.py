@@ -1,7 +1,8 @@
 """Tests for the SpellingReader."""
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 from lespell.io import SpellingReader
 
@@ -75,7 +76,7 @@ def test_reader_text_content(test_xml_path):
 def test_reader_iteration(test_xml_path):
     """Test iteration over reader items."""
     reader = SpellingReader(test_xml_path, language="en")
-    
+
     count = 0
     for item in reader:
         count += 1

@@ -2,10 +2,10 @@
 """Simple spell checking example with LeSpell."""
 
 from lespell.spellchecker import (
-    SpellingChecker,
-    LevenshteinCandidateGenerator,
     CostBasedRanker,
     DictionaryErrorDetector,
+    LevenshteinCandidateGenerator,
+    SpellingChecker,
 )
 
 
