@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Set, Tuple
 import os
 
+from rapidfuzz import distance
+
 from lespell.spellchecker.annotations import Text, Annotation
 
 
@@ -99,6 +101,104 @@ class LanguageToolCandidateGenerator(CandidateGenerator):
         return suggestions
 
 
+
+class RapidFuzzLevenshteinCandidateGenerator(CandidateGenerator):
+    """Generate candidates using Levenshtein distance via rapidfuzz library.
+
+    Uses C-optimized unweighted Levenshtein distance for efficiency.
+    REQUIRES a dictionary to function.
+    """
+
+    def __init__(
+        self,
+        language: str = "en",
+        dictionary=None,
+        max_candidates: int = 10,
+        cutoff: float = 0.6,
+    ):
+        """Initialize RapidFuzz Levenshtein candidate generator.
+        
+        Args:
+            language: Language code (default: 'en')
+            dictionary: Path-like, Set[str], or List[Set[str]].
+                       Required. Path-like loads from file (one word per line),
+                       Set[str] uses directly, List[Set[str]] merges all
+            max_candidates: Maximum number of suggestions to return
+            cutoff: Minimum similarity score (0.0-1.0) to include candidates
+            
+        Raises:
+            ValueError: If dictionary not provided
+            FileNotFoundError: If path doesn't exist
+        """
+        super().__init__(language)
+        
+        if dictionary is None:
+            raise ValueError(
+                "RapidFuzzLevenshteinCandidateGenerator requires a dictionary. "
+                "Provide path-like, Set[str], or List[Set[str]]."
+            )
+        
+        self.max_candidates = max_candidates
+        self.cutoff = cutoff
+        self.dictionary_path = None
+        
+        # Load dictionary
+        merged = set()
+        
+        if isinstance(dictionary, list):
+            for d in dictionary:
+                if isinstance(d, set):
+                    merged.update(w.lower() for w in d)
+                else:
+                    raise TypeError(f"List items must be sets, got {type(d)}")
+        elif isinstance(dictionary, (str, os.PathLike)):
+            path = str(dictionary)
+            if not os.path.exists(path):
+                raise FileNotFoundError(f"Dictionary not found: {path}")
+            with open(path, "r", encoding="utf-8") as f:
+                merged.update(line.strip().lower() for line in f if line.strip())
+            self.dictionary_path = path
+        elif isinstance(dictionary, set):
+            merged.update(w.lower() for w in dictionary)
+        else:
+            raise TypeError(
+                f"dictionary must be path-like, Set[str], or List[Set[str]], got {type(dictionary)}"
+            )
+        
+        self.dictionary = merged
+
+    def generate(
+        self, misspelled: str, context: Optional[str] = None
+    ) -> List[Tuple[str, float]]:
+        """Generate candidates using rapidfuzz Levenshtein distance.
+        
+        Uses C-optimized unweighted distance and returns candidates
+        normalized to cost (inverse similarity).
+        """
+        if not self.dictionary:
+            return []
+
+        misspelled_lower = misspelled.lower()
+        
+        # Use rapidfuzz to score all dictionary words
+        candidates = []
+        for word in self.dictionary:
+            # Calculate similarity (0-100)
+            similarity = distance.Levenshtein.normalized_similarity(
+                misspelled_lower, word
+            )
+            
+            if similarity >= self.cutoff:
+                # Convert similarity to cost (lower is better)
+                cost = 1.0 - similarity
+                candidates.append((word, cost))
+
+        # Sort by cost and return top candidates
+        candidates.sort(key=lambda x: x[1])
+        return candidates[: self.max_candidates]
+
+
+# TODO rely on external faster library for weighted Levenshtein distance (e.g. https://pypi.org/project/weighted-levenshtein/)
 class LevenshteinCandidateGenerator(CandidateGenerator):
     """Generate candidates using grapheme-level Levenshtein distance.
 
