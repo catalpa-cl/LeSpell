@@ -1595,4 +1595,4 @@ lang = ["language-tool-python"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.9"
-content-hash = "4f83470bab42ae037085b33489dd8636dcfbf6e129f2ceaa48a10b6695859e29"
+content-hash = "e741f47ddd46fd28cf43292ee55d2b4cc5d34f36a51623d6cb603e6dab0cd2b3"
