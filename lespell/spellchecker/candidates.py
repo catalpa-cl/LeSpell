@@ -39,41 +39,64 @@ class CandidateGenerator(ABC):
 class HunspellCandidateGenerator(CandidateGenerator):
     """Generate candidates using Hunspell dictionary."""
 
-    def __init__(
-        self,
-        language: str = "en",
-        dic_path: Optional[str] = None,
-        aff_path: Optional[str] = None,
-    ):
+    def __init__(self, hunspell_wrapper):
+        """Initialize Hunspell candidate generator.
+        
+        Args:
+            hunspell_wrapper: Configured HunspellWrapper instance from lespell.integrations
+        """
+        # Get language from wrapper
+        language = hunspell_wrapper.language
         super().__init__(language)
-        self.dic_path = dic_path
-        self.aff_path = aff_path
-        self.hunspell = None
-
-        try:
-            import hunspell
-
-            if dic_path and aff_path:
-                self.hunspell = hunspell.HunSpell(dic_path, aff_path)
-            else:
-                # Try to use system hunspell
-                self.hunspell = hunspell.HunSpell(language)
-        except (ImportError, Exception) as e:
-            raise ImportError(
-                f"Hunspell candidate generator requires hunspell library. "
-                f"Install with: pip install hunspell. Error: {e}"
-            )
+        self.hunspell = hunspell_wrapper
 
     def generate(
         self, misspelled: str, context: Optional[str] = None
     ) -> List[Tuple[str, float]]:
         """Generate candidates using Hunspell."""
-        if not self.hunspell:
-            return []
-
         suggestions = self.hunspell.suggest(misspelled)
         # All suggestions get same cost (Hunspell internal ranking)
         return [(word, 1.0) for word in suggestions]
+
+
+class LanguageToolCandidateGenerator(CandidateGenerator):
+    """Generate candidates using LanguageTool suggestions."""
+
+    def __init__(self, languagetool_wrapper):
+        """Initialize LanguageTool candidate generator.
+        
+        Args:
+            languagetool_wrapper: Configured LanguageToolWrapper instance from lespell.integrations
+        """
+        # Get language from wrapper
+        language = languagetool_wrapper.language
+        super().__init__(language)
+        self.languagetool = languagetool_wrapper
+
+    def generate(
+        self, misspelled: str, context: Optional[str] = None
+    ) -> List[Tuple[str, float]]:
+        """Generate candidates using LanguageTool.
+        
+        Detects the misspelled word in context (or just the word itself) 
+        and gets suggestions from LanguageTool.
+        """
+        if not context:
+            context = misspelled
+        
+        # Check the context to find errors and get suggestions
+        errors = self.languagetool.check(context)
+        
+        suggestions = []
+        for error in errors:
+            # Look for suggestions that might match our word
+            error_text = context[error["offset"] : error["offset"] + error["length"]]
+            if error_text.lower() == misspelled.lower():
+                # Add suggestions with equal cost
+                for replacement in error["replacements"]:
+                    suggestions.append((replacement, 1.0))
+        
+        return suggestions
 
 
 class LevenshteinCandidateGenerator(CandidateGenerator):
@@ -86,8 +109,7 @@ class LevenshteinCandidateGenerator(CandidateGenerator):
     def __init__(
         self,
         language: str = "en",
-        dictionary_path: Optional[str] = None,
-        dictionary: Optional[Set[str]] = None,
+        dictionary=None,
         deletion_weight: float = 1.0,
         insertion_weight: float = 1.0,
         substitution_weight: float = 1.0,
@@ -99,8 +121,9 @@ class LevenshteinCandidateGenerator(CandidateGenerator):
         
         Args:
             language: Language code (default: 'en')
-            dictionary_path: Path to dictionary file (one word per line)
-            dictionary: Pre-loaded dictionary as set of words
+            dictionary: Path-like, Set[str], or List[Set[str]].
+                       Required. Path-like loads from file (one word per line),
+                       Set[str] uses directly, List[Set[str]] merges all
             deletion_weight: Cost of character deletion
             insertion_weight: Cost of character insertion
             substitution_weight: Cost of character substitution
@@ -109,33 +132,49 @@ class LevenshteinCandidateGenerator(CandidateGenerator):
             max_candidates: Maximum number of suggestions to return
             
         Raises:
-            ValueError: If neither dictionary_path nor dictionary is provided
+            ValueError: If dictionary not provided
+            FileNotFoundError: If path doesn't exist
         """
         super().__init__(language)
         
-        # Validate that at least one dictionary source is provided
-        if dictionary_path is None and dictionary is None:
+        if dictionary is None:
             raise ValueError(
-                "LevenshteinCandidateGenerator REQUIRES a dictionary. "
-                "Provide either 'dictionary_path' (file path) or 'dictionary' (set of words)."
+                "LevenshteinCandidateGenerator requires a dictionary. "
+                "Provide path-like, Set[str], or List[Set[str]]."
             )
         
-        self.dictionary_path = dictionary_path
         self.deletion_weight = deletion_weight
         self.insertion_weight = insertion_weight
         self.substitution_weight = substitution_weight
         self.transposition_weight = transposition_weight
         self.default_weight = default_weight
         self.max_candidates = max_candidates
+        self.dictionary_path = None
         
-        # Load dictionary from provided source
-        if dictionary is not None:
-            self.dictionary = dictionary
-        elif dictionary_path is not None:
-            self.dictionary: Set[str] = set()
-            self._load_dictionary(dictionary_path)
+        # Load dictionary
+        merged = set()
+        
+        if isinstance(dictionary, list):
+            for d in dictionary:
+                if isinstance(d, set):
+                    merged.update(w.lower() for w in d)
+                else:
+                    raise TypeError(f"List items must be sets, got {type(d)}")
+        elif isinstance(dictionary, (str, os.PathLike)):
+            path = str(dictionary)
+            if not os.path.exists(path):
+                raise FileNotFoundError(f"Dictionary not found: {path}")
+            with open(path, "r", encoding="utf-8") as f:
+                merged.update(line.strip().lower() for line in f if line.strip())
+            self.dictionary_path = path
+        elif isinstance(dictionary, set):
+            merged.update(w.lower() for w in dictionary)
         else:
-            self.dictionary = set()
+            raise TypeError(
+                f"dictionary must be path-like, Set[str], or List[Set[str]], got {type(dictionary)}"
+            )
+        
+        self.dictionary = merged
 
     def _load_dictionary(self, path: str) -> None:
         """Load dictionary from file (one word per line)."""
@@ -201,21 +240,57 @@ class KeyboardDistanceCandidateGenerator(CandidateGenerator):
     def __init__(
         self,
         language: str = "en",
-        dictionary_path: Optional[str] = None,
+        dictionary=None,
         keyboard_matrix_path: Optional[str] = None,
         default_distance: float = 4.0,
         max_candidates: int = 10,
     ):
+        """Initialize keyboard distance candidate generator.
+        
+        Args:
+            language: Language code (default: 'en')
+            dictionary: Path-like, Set[str], or List[Set[str]].
+                       Optional but recommended. Path-like loads from file,
+                       Set[str] uses directly, List[Set[str]] merges all
+            keyboard_matrix_path: Path to keyboard distance matrix file
+            default_distance: Default distance for unmapped key pairs
+            max_candidates: Maximum number of suggestions to return
+        """
         super().__init__(language)
-        self.dictionary_path = dictionary_path
+        
         self.keyboard_matrix_path = keyboard_matrix_path
         self.default_distance = default_distance
         self.max_candidates = max_candidates
         self.dictionary: Set[str] = set()
         self.keyboard_distances: Dict[Tuple[str, str], float] = {}
+        self.dictionary_path = None
 
-        if dictionary_path:
-            self._load_dictionary(dictionary_path)
+        # Load dictionary if provided
+        if dictionary is not None:
+            merged = set()
+            
+            if isinstance(dictionary, list):
+                for d in dictionary:
+                    if isinstance(d, set):
+                        merged.update(w.lower() for w in d)
+                    else:
+                        raise TypeError(f"List items must be sets, got {type(d)}")
+            elif isinstance(dictionary, (str, os.PathLike)):
+                path = str(dictionary)
+                if not os.path.exists(path):
+                    raise FileNotFoundError(f"Dictionary not found: {path}")
+                with open(path, "r", encoding="utf-8") as f:
+                    merged.update(line.strip().lower() for line in f if line.strip())
+                self.dictionary_path = path
+            elif isinstance(dictionary, set):
+                merged.update(w.lower() for w in dictionary)
+            else:
+                raise TypeError(
+                    f"dictionary must be path-like, Set[str], or List[Set[str]], got {type(dictionary)}"
+                )
+            
+            self.dictionary = merged
+        
         if keyboard_matrix_path:
             self._load_keyboard_matrix(keyboard_matrix_path)
 
@@ -277,8 +352,7 @@ class PhonemeCandidateGenerator(CandidateGenerator):
     def __init__(
         self,
         language: str = "en",
-        dictionary_path: Optional[str] = None,
-        dictionary: Optional[Set[str]] = None,
+        dictionary=None,
         phoneme_weight_path: Optional[str] = None,
         max_candidates: int = 10,
     ):
@@ -286,36 +360,53 @@ class PhonemeCandidateGenerator(CandidateGenerator):
         
         Args:
             language: Language code (default: 'en')
-            dictionary_path: Path to dictionary file (one word per line)
-            dictionary: Pre-loaded dictionary as set of words
+            dictionary: Path-like, Set[str], or List[Set[str]].
+                       Required. Path-like loads from file (one word per line),
+                       Set[str] uses directly, List[Set[str]] merges all
             phoneme_weight_path: Path to phoneme weight matrix
             max_candidates: Maximum number of suggestions to return
             
         Raises:
-            ValueError: If neither dictionary_path nor dictionary is provided
+            ValueError: If dictionary not provided
+            FileNotFoundError: If path doesn't exist
         """
         super().__init__(language)
         
-        # Validate that at least one dictionary source is provided
-        if dictionary_path is None and dictionary is None:
+        if dictionary is None:
             raise ValueError(
-                "PhonemeCandidateGenerator REQUIRES a dictionary. "
-                "Provide either 'dictionary_path' (file path) or 'dictionary' (set of words)."
+                "PhonemeCandidateGenerator requires a dictionary. "
+                "Provide path-like, Set[str], or List[Set[str]]."
             )
         
-        self.dictionary_path = dictionary_path
         self.phoneme_weight_path = phoneme_weight_path
         self.max_candidates = max_candidates
         self.g2p_cache: Dict[str, str] = {}
+        self.dictionary_path = None
         
-        # Load dictionary from provided source
-        if dictionary is not None:
-            self.dictionary = dictionary
-        elif dictionary_path is not None:
-            self.dictionary: Set[str] = set()
-            self._load_dictionary(dictionary_path)
+        # Load dictionary
+        merged = set()
+        
+        if isinstance(dictionary, list):
+            for d in dictionary:
+                if isinstance(d, set):
+                    merged.update(w.lower() for w in d)
+                else:
+                    raise TypeError(f"List items must be sets, got {type(d)}")
+        elif isinstance(dictionary, (str, os.PathLike)):
+            path = str(dictionary)
+            if not os.path.exists(path):
+                raise FileNotFoundError(f"Dictionary not found: {path}")
+            with open(path, "r", encoding="utf-8") as f:
+                merged.update(line.strip().lower() for line in f if line.strip())
+            self.dictionary_path = path
+        elif isinstance(dictionary, set):
+            merged.update(w.lower() for w in dictionary)
         else:
-            self.dictionary = set()
+            raise TypeError(
+                f"dictionary must be path-like, Set[str], or List[Set[str]], got {type(dictionary)}"
+            )
+        
+        self.dictionary = merged
 
     def _load_dictionary(self, path: str) -> None:
         """Load dictionary from file."""
@@ -451,42 +542,3 @@ class MissingSpaceCandidateGenerator(CandidateGenerator):
         candidates.sort(key=lambda x: x[1])
         return candidates[: self.max_candidates]
 
-
-class CandidateEnsemble:
-    """Combine multiple candidate generators."""
-
-    def __init__(self, generators: List[CandidateGenerator]):
-        self.generators = generators
-
-    def generate(
-        self, misspelled: str, context: Optional[str] = None, top_k: int = 10
-    ) -> List[Tuple[str, float, str]]:
-        """Generate candidates from all generators and merge results.
-
-        Returns:
-            List of (word, cost, method) tuples sorted by cost
-        """
-        all_candidates = []
-
-        for generator in self.generators:
-            try:
-                candidates = generator.generate(misspelled, context)
-                for word, cost in candidates:
-                    all_candidates.append(
-                        (word, cost, generator.__class__.__name__)
-                    )
-            except (NotImplementedError, Exception):
-                # Skip generators that aren't implemented or fail
-                pass
-
-        # Remove duplicates (keep lowest cost)
-        seen = {}
-        for word, cost, method in all_candidates:
-            if word not in seen or cost < seen[word][0]:
-                seen[word] = (cost, method)
-
-        # Convert back to list and sort
-        result = [(word, cost, method) for word, (cost, method) in seen.items()]
-        result.sort(key=lambda x: x[1])
-
-        return result[:top_k]

@@ -2,7 +2,7 @@
 
 import pytest
 
-from lespell.languagetool import LanguageToolCorrector, LanguageToolDetector
+from lespell.integrations import LanguageToolCorrector, LanguageToolDetector
 
 # Skip all tests if language-tool-python is not installed
 pytest.importorskip("language_tool_python")

@@ -10,7 +10,7 @@ from lespell.analysis import (
     find_similar_errors,
     get_corpus_statistics,
 )
-from lespell.core import SpellingItem
+from lespell.io import SpellingItem
 
 
 class TestLevenshteinDistance:

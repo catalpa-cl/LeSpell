@@ -124,42 +124,7 @@ class PreprocessingPipeline:
 
         return text
 
-    @staticmethod
-    def mark_errors(text: Text) -> Text:
-        """Mark tokens that should be corrected.
 
-        A token is an error if:
-        - It's a valid token (word pattern)
-        - It's NOT marked as known_word
-        - It's NOT marked as numeric
-        - It's NOT marked as punctuation
-        """
-        word_pattern = re.compile(r"^[a-zA-Z\'-]+$")
-        tokens = text.get_tokens()
-
-        for start, end, token in tokens:
-            if not word_pattern.match(token):
-                continue  # Not a word
-
-            # Check if marked as known or excluded
-            overlapping = text.get_overlapping_annotations(start, end)
-            if any(
-                a.type in {"known_word", "numeric", "punctuation"}
-                for a in overlapping
-            ):
-                continue  # Word is known or excluded
-
-            # Mark as spelling error
-            text.add_annotation(
-                Annotation(
-                    type="spelling_error",
-                    start=start,
-                    end=end,
-                    metadata={"token": token},
-                )
-            )
-
-        return text
 
 
 class SimplePreprocessor:
@@ -180,13 +145,16 @@ class SimplePreprocessor:
         self.language = language
 
     def preprocess(self, text: Text) -> Text:
-        """Run full preprocessing pipeline."""
+        """Run preprocessing pipeline (tokenization and classification only).
+
+        Does NOT mark spelling errors - that's the ErrorDetector's responsibility.
+        """
         # Mark special token types
         text = PreprocessingPipeline.mark_numerics(text)
         text = PreprocessingPipeline.mark_punctuation(text)
         text = PreprocessingPipeline.mark_capitalized_words(text)
 
-        # Check word validity
+        # Check word validity (mark known words)
         if self.use_hunspell:
             text = PreprocessingPipeline.check_hunspell(
                 text, self.hunspell_dic, self.hunspell_aff, self.language
@@ -194,7 +162,5 @@ class SimplePreprocessor:
         elif self.dictionary_path:
             text = PreprocessingPipeline.check_dictionary(text, self.dictionary_path)
 
-        # Mark spelling errors
-        text = PreprocessingPipeline.mark_errors(text)
-
         return text
+

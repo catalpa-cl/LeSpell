@@ -3,7 +3,7 @@
 import pytest
 from pathlib import Path
 
-from lespell.reader import SpellingReader
+from lespell.io import SpellingReader
 
 
 @pytest.fixture

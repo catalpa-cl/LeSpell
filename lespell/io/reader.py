@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List, Union
 
-from lespell.core import SpellingItem
+from lespell.io.core import SpellingItem
 
 
 class SpellingReader:

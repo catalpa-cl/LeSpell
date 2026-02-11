@@ -45,9 +45,7 @@ For development, resources are available in the `data/` directory at the reposit
 ### Basic Usage
 
 ```python
-from lespell.core import SpellingItem
-from lespell.reader import SpellingReader
-from lespell.writer import SpellingWriter
+from lespell.io import SpellingItem, SpellingReader, SpellingWriter
 
 # Read spelling error data
 reader = SpellingReader()
@@ -82,7 +80,7 @@ items = toefl.convert("path/to/toefl/corpus")
 ### Error Detection and Correction
 
 ```python
-from lespell.languagetool import LanguageToolDetector, LanguageToolCorrector
+from lespell.integrations import LanguageToolDetector, LanguageToolCorrector
 
 # Detect spelling errors
 detector = LanguageToolDetector(language="en")

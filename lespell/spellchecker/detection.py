@@ -1,0 +1,148 @@
+"""Error detection components for spelling correction."""
+
+from abc import ABC, abstractmethod
+from typing import List, Optional, Set, Tuple
+import os
+import re
+
+from lespell.spellchecker.annotations import Text, Annotation
+from lespell.spellchecker.errors import SpellingError
+
+
+class ErrorDetector(ABC):
+    """Abstract base class for error detection strategies."""
+
+    @abstractmethod
+    def detect(self, text: Text) -> Tuple[Text, List[SpellingError]]:
+        """Detect spelling errors in preprocessed text.
+
+        Args:
+            text: Preprocessed Text object (with numeric, punctuation, capitalized annotations)
+
+        Returns:
+            Tuple of (annotated Text with spelling_error annotations, list of SpellingError objects)
+        """
+        pass
+
+
+class DictionaryErrorDetector(ErrorDetector):
+    """Detect errors by checking against a word dictionary."""
+
+    def __init__(self, dictionary=None):
+        """Initialize dictionary error detector.
+
+        Args:
+            dictionary: Path-like, Set[str], or List[Set[str]].
+                       Path-like: loads words from file (one per line)
+                       Set[str]: uses directly
+                       List[Set[str]]: merges all dictionaries
+
+        Raises:
+            ValueError: If dictionary not provided
+            FileNotFoundError: If path doesn't exist
+        """
+        if dictionary is None:
+            raise ValueError("dictionary parameter is required")
+
+        merged = set()
+        self.dictionary_path = None
+
+        # Handle list of dictionaries
+        if isinstance(dictionary, list):
+            for d in dictionary:
+                if isinstance(d, set):
+                    merged.update(w.lower() for w in d)
+                else:
+                    raise TypeError(f"List items must be sets, got {type(d)}")
+        # Handle path-like object
+        elif isinstance(dictionary, (str, os.PathLike)):
+            path = str(dictionary)
+            if not os.path.exists(path):
+                raise FileNotFoundError(f"Dictionary not found: {path}")
+            with open(path, "r", encoding="utf-8") as f:
+                merged.update(line.strip().lower() for line in f if line.strip())
+            self.dictionary_path = path
+        # Handle set
+        elif isinstance(dictionary, set):
+            merged.update(w.lower() for w in dictionary)
+        else:
+            raise TypeError(
+                f"dictionary must be path-like, Set[str], or List[Set[str]], got {type(dictionary)}"
+            )
+
+        self.dictionary = merged
+
+    def detect(self, text: Text) -> Tuple[Text, List[SpellingError]]:
+        """Detect errors using dictionary lookup."""
+        word_pattern = re.compile(r"^[a-zA-Z\'-]+$")
+        tokens = text.get_tokens()
+        errors = []
+
+        for start, end, token in tokens:
+            if not word_pattern.match(token):
+                continue  # Not a word
+
+            # Check if marked as excluded (numeric, punctuation, etc.)
+            overlapping = text.get_overlapping_annotations(start, end)
+            if any(
+                a.type in {"numeric", "punctuation"}
+                for a in overlapping
+            ):
+                continue  # Excluded
+
+            # Check if word is in dictionary
+            if token.lower() in self.dictionary:
+                continue  # Known word
+
+            # Mark as spelling error
+            annotation = Annotation(
+                type="spelling_error",
+                start=start,
+                end=end,
+                metadata={"token": token, "detector": "dictionary"},
+            )
+            text.add_annotation(annotation)
+
+            error = SpellingError.from_annotation(annotation, text.content)
+            errors.append(error)
+
+        return text, errors
+
+
+class CompositeErrorDetector(ErrorDetector):
+    """Chain multiple error detectors with fallback behavior."""
+
+    def __init__(self, detectors: List[ErrorDetector], use_first_match: bool = True):
+        """Initialize composite error detector.
+
+        Args:
+            detectors: List of ErrorDetector instances to chain
+            use_first_match: If True, use first detector that flags an error;
+                           if False, require agreement from all detectors
+        """
+        if not detectors:
+            raise ValueError("At least one detector required")
+        self.detectors = detectors
+        self.use_first_match = use_first_match
+
+    def detect(self, text: Text) -> Tuple[Text, List[SpellingError]]:
+        """Detect errors using chained detectors."""
+        errors = []
+        error_positions = set()
+
+        for detector in self.detectors:
+            text, detector_errors = detector.detect(text)
+
+            for error in detector_errors:
+                pos = (error.start, error.end)
+
+                if self.use_first_match:
+                    # Use first detector that flags this position
+                    if pos not in error_positions:
+                        errors.append(error)
+                        error_positions.add(pos)
+                else:
+                    # Collect all detections (no filtering)
+                    errors.append(error)
+
+        return text, errors

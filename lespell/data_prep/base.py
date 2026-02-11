@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List, Union
 
-from lespell.core import SpellingItem
+from lespell.io import SpellingItem
 
 
 class BaseConverter(ABC):

@@ -2,7 +2,7 @@
 
 import pytest
 
-from lespell.core import SpellingItem
+from lespell.io import SpellingItem
 
 
 def test_spelling_item_basic():

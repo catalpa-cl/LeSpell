@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Dict, List, Union
 
-from lespell.core import SpellingItem
+from lespell.io import SpellingItem
 from lespell.data_prep.base import BaseConverter
 
 

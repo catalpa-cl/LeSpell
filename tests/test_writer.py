@@ -6,8 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from lespell.core import SpellingItem
-from lespell.writer import SpellingWriter
+from lespell.io import SpellingItem, SpellingWriter
 
 
 @pytest.fixture

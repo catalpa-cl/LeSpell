@@ -6,13 +6,13 @@ from lespell.spellchecker import (
     SpellingChecker,
     LevenshteinCandidateGenerator,
     CostBasedRanker,
-    SimplePreprocessor,
+    DictionaryErrorDetector,
 )
-from lespell.core import SpellingItem
+from lespell.io import SpellingItem
 
 
-def create_test_dictionary():
-    """Create a simple test dictionary."""
+def create_test_dictionary_set():
+    """Create a simple test dictionary as set."""
     return {
         "this", "is", "a", "test", "of", "the", "spelling", "checker",
         "quick", "brown", "fox", "jumps", "over", "lazy", "dog",
@@ -25,31 +25,32 @@ class TestSpellingChecker(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        dictionary = create_test_dictionary()
-        self.generators = [
-            LevenshteinCandidateGenerator(
-                language="en",
-                dictionary=dictionary,
-                substitution_weight=1.0,
-                deletion_weight=1.0,
-                insertion_weight=1.0,
-                transposition_weight=1.0,
-                max_candidates=10,
-            )
-        ]
+        dictionary = create_test_dictionary_set()
+        self.generator = LevenshteinCandidateGenerator(
+            language="en",
+            dictionary=dictionary,
+            substitution_weight=1.0,
+            deletion_weight=1.0,
+            insertion_weight=1.0,
+            transposition_weight=1.0,
+            max_candidates=10,
+        )
         self.ranker = CostBasedRanker()
-        self.preprocessor = SimplePreprocessor()
+        
+        # Create detector with the dictionary
+        self.detector = DictionaryErrorDetector(dictionary=dictionary)
+        
         self.checker = SpellingChecker(
-            candidate_generators=self.generators,
+            detector=self.detector,
+            candidate_generators=[self.generator],
             ranker=self.ranker,
-            preprocessor=self.preprocessor,
         )
 
     def test_checker_initialization(self):
         """Test SpellingChecker initialization."""
+        self.assertIsNotNone(self.checker.detector)
         self.assertIsNotNone(self.checker.ensemble)
         self.assertIsNotNone(self.checker.ranker)
-        self.assertIsNotNone(self.checker.preprocessor)
 
     def test_check_text_basic(self):
         """Test basic text checking."""
@@ -97,21 +98,25 @@ class TestSpellingChecker(unittest.TestCase):
 
     def test_checker_with_single_generator(self):
         """Test SpellingChecker with minimal setup."""
-        dictionary = create_test_dictionary()
+        dictionary = create_test_dictionary_set()
+        generator = LevenshteinCandidateGenerator(
+            language="en",
+            dictionary=dictionary,
+            substitution_weight=1.0,
+            max_candidates=5,
+        )
+        
+        detector = DictionaryErrorDetector.__new__(DictionaryErrorDetector)
+        detector.dictionary = dictionary
+        detector.dictionary_path = None
+        
         checker = SpellingChecker(
-            candidate_generators=[
-                LevenshteinCandidateGenerator(
-                    language="en",
-                    dictionary=dictionary,
-                    substitution_weight=1.0,
-                    max_candidates=5,
-                )
-            ]
+            detector=detector,
+            candidate_generators=[generator],
         )
         self.assertIsNotNone(checker)
         # Should use default CostBasedRanker
         self.assertIsNotNone(checker.ranker)
-
     def test_check_text_with_context(self):
         """Test that error results include context."""
         text = "The qwick brown fox jumps over the lazi dog."

@@ -3,39 +3,42 @@
 from typing import List, Optional, Dict, Tuple
 
 from lespell.spellchecker.annotations import Text, Annotation
-from lespell.spellchecker.candidates import (
-    CandidateEnsemble,
-    CandidateGenerator,
-)
-from lespell.spellchecker.preprocessing import SimplePreprocessor
+from lespell.spellchecker.candidates import CandidateGenerator
+from lespell.spellchecker.detection import ErrorDetector
 from lespell.spellchecker.ranking import Ranker, CostBasedRanker
-from lespell.core import SpellingItem
+from lespell.io import SpellingItem
 
 
 class SpellingChecker:
-    """Sophisticated spelling checker with multiple correction strategies."""
+    """Spelling checker orchestrating detection, correction, and ranking phases.
+
+    The checker comprises three distinct phases:
+    1. Error Detection: Identifies spelling errors in text
+    2. Correction Generation: Generates candidate corrections for each error
+    3. Ranking: Ranks candidates by quality
+    """
 
     def __init__(
         self,
+        detector: ErrorDetector,
         candidate_generators: List[CandidateGenerator],
         ranker: Optional[Ranker] = None,
-        preprocessor: Optional[SimplePreprocessor] = None,
     ):
         """Initialize spell checker.
 
         Args:
-            candidate_generators: List of candidate generation strategies
-            ranker: Ranking strategy (default: CostBasedRanker)
-            preprocessor: Preprocessing pipeline (optional)
+            detector: ErrorDetector instance for phase 1
+            candidate_generators: List of candidate generation strategies (phase 2)
+            ranker: Ranking strategy for phase 3 (default: CostBasedRanker)
         """
-        self.ensemble = CandidateEnsemble(candidate_generators)
+        self.detector = detector
+        self.candidate_generators = candidate_generators
         self.ranker = ranker or CostBasedRanker()
-        self.preprocessor = preprocessor
 
     def check_text(
         self, text_content: str, context_window: int = 5
     ) -> Dict:
-        """Check text for spelling errors.
+        """Check text for spelling errors using three-phase workflow.
 
         Args:
             text_content: Text to check
@@ -46,23 +49,43 @@ class SpellingChecker:
         """
         text = Text(content=text_content)
 
-        # Preprocess if preprocessor available
-        if self.preprocessor:
-            text = self.preprocessor.preprocess(text)
+        # Phase 1: Error Detection
+        text, errors = self.detector.detect(text)
 
-        errors = text.get_annotations_by_type("spelling_error")
         results = []
 
+        # Phases 2 & 3: Correction Generation and Ranking
         for error in errors:
-            word = text.get_span_text(error.start, error.end)
+            word = error.word
 
             # Get context
             context_start = max(0, error.start - context_window * 5)
             context_end = min(len(text_content), error.end + context_window * 5)
             context = text_content[context_start:context_end]
 
-            # Generate candidates
-            candidates = self.ensemble.generate(word, context, top_k=10)
+            # Generate candidates from all generators
+            all_candidates = []
+            for generator in self.candidate_generators:
+                try:
+                    generated = generator.generate(word, context)
+                    for cand_word, cost in generated:
+                        all_candidates.append(
+                            (cand_word, cost, generator.__class__.__name__)
+                        )
+                except (NotImplementedError, Exception):
+                    # Skip generators that aren't implemented or fail
+                    pass
+
+            # Deduplicate candidates (keep lowest cost)
+            seen = {}
+            for cand_word, cost, method in all_candidates:
+                if cand_word not in seen or cost < seen[cand_word][0]:
+                    seen[cand_word] = (cost, method)
+
+            # Convert back to list, sort, and keep top 10
+            candidates = [(w, c, m) for w, (c, m) in seen.items()]
+            candidates.sort(key=lambda x: x[1])
+            candidates = candidates[:10]
 
             # Rank candidates
             ranked = self.ranker.rank(

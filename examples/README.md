@@ -114,7 +114,7 @@ checker = SpellingChecker(
 ### Pattern 4: Batch Processing
 ```python
 from lespell.spellchecker import SpellingChecker, LevenshteinCandidateGenerator
-from lespell.core import SpellingItem
+from lespell.io import SpellingItem
 
 checker = SpellingChecker(
     candidate_generators=[LevenshteinCandidateGenerator()]
@@ -152,7 +152,7 @@ results = checker.check_spelling_items(items)
 ### Rankers
 - `CostBasedRanker` - Simple cost-based sorting
 - `EnsembleRanker` - Combine multiple rankers
-- `LanguageModelReranker` - Language model scoring (TODO)
+- `MaskedLanguageModelRanker` - Masked language model scoring (TODO)
 
 ## Troubleshooting
 

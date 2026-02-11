@@ -2,8 +2,6 @@
 
 from abc import ABC, abstractmethod
 from typing import List, Dict, Optional, Tuple
-import json
-import os
 
 
 class Ranker(ABC):
@@ -42,52 +40,26 @@ class CostBasedRanker(Ranker):
         return sorted(candidates, key=lambda x: x[1])
 
 
-class LanguageModelReranker(Ranker):
-    """Rerank candidates using language model.
+class MaskedLanguageModelRanker(Ranker):
+    """Rank candidates using masked language model.
 
     TODO: Integrate with HuggingFace for masked language model scoring.
-    TODO: Integrate with kenlm for n-gram probability lookups.
     """
 
     def __init__(
         self,
-        model_path: Optional[str] = None,
-        use_huggingface: bool = False,
         model_name: str = "distilbert-base-uncased",
     ):
-        """Initialize LM reranker.
+        """Initialize masked language model ranker.
 
         Args:
-            model_path: Path to n-gram frequency file or model
-            use_huggingface: If True, use HuggingFace transformers for scoring
             model_name: HuggingFace model name (e.g., "bert-base-uncased")
         """
-        self.model_path = model_path
-        self.use_huggingface = use_huggingface
         self.model_name = model_name
-        self.lm_scores: Dict[str, float] = {}
         self.transformer_model = None
         self.tokenizer = None
+        self._initialize_huggingface_model()
 
-        if model_path and not use_huggingface:
-            self._load_ngram_model(model_path)
-        elif use_huggingface:
-            self._initialize_huggingface_model()
-
-    def _load_ngram_model(self, path: str) -> None:
-        """Load n-gram frequency model.
-
-        TODO: Integrate with kenlm for n-gram model loading.
-        Supported formats: ARPA, sqlite
-        """
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"Language model not found: {path}")
-
-        raise NotImplementedError(
-            "N-gram model loading not yet implemented. "
-            "TODO: Integrate with kenlm library for ARPA model support. "
-            "Install with: pip install kenlm"
-        )
 
     def _initialize_huggingface_model(self) -> None:
         """Initialize HuggingFace transformer model for contextual scoring.
@@ -125,24 +97,18 @@ class LanguageModelReranker(Ranker):
         context: Optional[str] = None,
         misspelled: Optional[str] = None,
     ) -> List[Tuple[str, float]]:
-        """Rerank candidates using language model."""
+        """Rank candidates using language model."""
 
         if not context:
             # Without context, use cost-based ranking
             return sorted(candidates, key=lambda x: x[1])
 
-        if self.use_huggingface:
-            # TODO: Use HuggingFace for reranking
-            raise NotImplementedError(
-                "HuggingFace reranking not yet implemented. "
-                "TODO: Use masked language model to rescore candidates"
-            )
-        else:
-            # TODO: Use n-gram model for reranking
-            raise NotImplementedError(
-                "N-gram model reranking not yet implemented. "
-                "TODO: Score candidates based on n-gram probabilities"
-            )
+        # TODO: Use masked language model for reranking
+        raise NotImplementedError(
+            "Masked language model reranking not yet implemented. "
+            "TODO: Use HuggingFace transformer to score candidates in context. "
+            "Install with: pip install transformers torch"
+        )
 
 
 class EnsembleRanker(Ranker):

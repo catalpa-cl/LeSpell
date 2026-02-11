@@ -14,5 +14,5 @@ def test_package_version():
 def test_package_has_modules():
     """Test that the package has the expected modules."""
     assert hasattr(lespell, "__all__")
-    expected_modules = ["data_prep", "analysis", "languagetool"]
+    expected_modules = ["data_prep", "analysis", "integrations"]
     assert all(module in lespell.__all__ for module in expected_modules)

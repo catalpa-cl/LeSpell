@@ -2,7 +2,7 @@
 
 from typing import List, Tuple
 
-from lespell.core import SpellingItem
+from lespell.io.core import SpellingItem
 
 
 def calculate_levenshtein_distance(s1: str, s2: str) -> int:
