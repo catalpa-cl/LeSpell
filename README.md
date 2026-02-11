@@ -221,13 +221,23 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) for deta
 If you use LeSpell in your research, please cite:
 
 ```bibtex
-@software{lespell2024,
-  title={LeSpell: A Python Library for Spelling Error Detection and Analysis},
-  author={Your Name},
-  year={2024},
-  url={https://github.com/yourusername/lespell}
+@inproceedings{bexte-etal-2022-lespell,
+    title = "{L}e{S}pell - A Multi-Lingual Benchmark Corpus of Spelling Errors to Develop Spellchecking Methods for Learner Language",
+    author = "Bexte, Marie  and
+      Laarmann-Quante, Ronja  and
+      Horbach, Andrea  and
+      Zesch, Torsten",
+    booktitle = "Proceedings of the Thirteenth Language Resources and Evaluation Conference",
+    month = jun,
+    year = "2022",
+    address = "Marseille, France",
+    publisher = "European Language Resources Association",
+    url = "https://aclanthology.org/2022.lrec-1.73/",
+    pages = "697--706",
 }
 ```
+
+[LeSpell - A Multi-Lingual Benchmark Corpus of Spelling Errors to Develop Spellchecking Methods for Learner Language](https://aclanthology.org/2022.lrec-1.73/) (Bexte et al., LREC 2022)
 
 ## Acknowledgments
 
