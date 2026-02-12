@@ -161,7 +161,6 @@ def get_tokens_from_cas(cas: Cas) -> List[Tuple[int, int, str]]:
     Returns:
         List of (start, end, text) tuples
     """
-    Token = get_typesystem().get_type("de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Token")
     tokens = []
 
     for token in cas.select("de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Token"):

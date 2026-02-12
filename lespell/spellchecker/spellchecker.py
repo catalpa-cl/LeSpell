@@ -45,6 +45,65 @@ class SpellingChecker:
         self.candidate_generators = candidate_generators
         self.ranker = ranker or CostBasedRanker()
 
+    def _generate_and_rank_suggestions(
+        self, error, text_content: str, context_window: int = 5
+    ) -> Dict:
+        """Generate and rank suggestions for a single error.
+
+        Args:
+            error: SpellingError object
+            text_content: Full text content
+            context_window: Context window size
+
+        Returns:
+            Dictionary with error details and suggestions
+        """
+        word = error.word
+
+        # Get context
+        context_start = max(0, error.start - context_window * 5)
+        context_end = min(len(text_content), error.end + context_window * 5)
+        context = text_content[context_start:context_end]
+
+        # Generate candidates from all generators
+        all_candidates = []
+        for generator in self.candidate_generators:
+            try:
+                generated = generator.generate(word, context)
+                for cand_word, cost in generated:
+                    all_candidates.append((cand_word, cost, generator.__class__.__name__))
+            except (NotImplementedError, Exception):
+                # Skip generators that aren't implemented or fail
+                pass
+
+        # Deduplicate candidates (keep lowest cost)
+        seen = {}
+        for cand_word, cost, method in all_candidates:
+            if cand_word not in seen or cost < seen[cand_word][0]:
+                seen[cand_word] = (cost, method)
+
+        # Convert back to list, sort, and keep top 10
+        candidates = [(w, c, m) for w, (c, m) in seen.items()]
+        candidates.sort(key=lambda x: x[1])
+        candidates = candidates[:10]
+
+        # Rank candidates
+        ranked = self.ranker.rank(
+            [(w, c) for w, c, _ in candidates],
+            context=context,
+            misspelled=word,
+        )
+
+        return {
+            "start": error.start,
+            "end": error.end,
+            "word": word,
+            "context": context,
+            "suggestions": [w for w, _ in ranked[:5]],
+            "scores": [c for _, c in ranked[:5]],
+            "methods": [m for _, _, m in candidates[:5]],
+        }
+
     def check_cas(self, cas: Cas, context_window: int = 5) -> Tuple[Cas, Dict]:
         """Check a CAS for spelling errors using three-phase workflow.
 
@@ -68,55 +127,8 @@ class SpellingChecker:
 
         # Phases 2 & 3: Correction Generation and Ranking
         for error in errors:
-            word = error.word
-
-            # Get context
-            context_start = max(0, error.start - context_window * 5)
-            context_end = min(len(text_content), error.end + context_window * 5)
-            context = text_content[context_start:context_end]
-
-            # Generate candidates from all generators
-            all_candidates = []
-            for generator in self.candidate_generators:
-                try:
-                    generated = generator.generate(word, context)
-                    for cand_word, cost in generated:
-                        all_candidates.append(
-                            (cand_word, cost, generator.__class__.__name__)
-                        )
-                except (NotImplementedError, Exception):
-                    # Skip generators that aren't implemented or fail
-                    pass
-
-            # Deduplicate candidates (keep lowest cost)
-            seen = {}
-            for cand_word, cost, method in all_candidates:
-                if cand_word not in seen or cost < seen[cand_word][0]:
-                    seen[cand_word] = (cost, method)
-
-            # Convert back to list, sort, and keep top 10
-            candidates = [(w, c, m) for w, (c, m) in seen.items()]
-            candidates.sort(key=lambda x: x[1])
-            candidates = candidates[:10]
-
-            # Rank candidates
-            ranked = self.ranker.rank(
-                [(w, c) for w, c, _ in candidates],
-                context=context,
-                misspelled=word,
-            )
-
-            results.append(
-                {
-                    "start": error.start,
-                    "end": error.end,
-                    "word": word,
-                    "context": context,
-                    "suggestions": [w for w, _ in ranked[:5]],
-                    "scores": [c for _, c in ranked[:5]],
-                    "methods": [m for _, _, m in candidates[:5]],
-                }
-            )
+            result = self._generate_and_rank_suggestions(error, text_content, context_window)
+            results.append(result)
 
         return cas, {
             "text": text_content,
@@ -143,55 +155,8 @@ class SpellingChecker:
 
         # Phases 2 & 3: Correction Generation and Ranking
         for error in errors:
-            word = error.word
-
-            # Get context
-            context_start = max(0, error.start - context_window * 5)
-            context_end = min(len(text_content), error.end + context_window * 5)
-            context = text_content[context_start:context_end]
-
-            # Generate candidates from all generators
-            all_candidates = []
-            for generator in self.candidate_generators:
-                try:
-                    generated = generator.generate(word, context)
-                    for cand_word, cost in generated:
-                        all_candidates.append(
-                            (cand_word, cost, generator.__class__.__name__)
-                        )
-                except (NotImplementedError, Exception):
-                    # Skip generators that aren't implemented or fail
-                    pass
-
-            # Deduplicate candidates (keep lowest cost)
-            seen = {}
-            for cand_word, cost, method in all_candidates:
-                if cand_word not in seen or cost < seen[cand_word][0]:
-                    seen[cand_word] = (cost, method)
-
-            # Convert back to list, sort, and keep top 10
-            candidates = [(w, c, m) for w, (c, m) in seen.items()]
-            candidates.sort(key=lambda x: x[1])
-            candidates = candidates[:10]
-
-            # Rank candidates
-            ranked = self.ranker.rank(
-                [(w, c) for w, c, _ in candidates],
-                context=context,
-                misspelled=word,
-            )
-
-            results.append(
-                {
-                    "start": error.start,
-                    "end": error.end,
-                    "word": word,
-                    "context": context,
-                    "suggestions": [w for w, _ in ranked[:5]],
-                    "scores": [c for _, c in ranked[:5]],
-                    "methods": [m for _, _, m in candidates[:5]],
-                }
-            )
+            result = self._generate_and_rank_suggestions(error, text_content, context_window)
+            results.append(result)
 
         return {
             "text": text_content,

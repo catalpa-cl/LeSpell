@@ -37,6 +37,10 @@ class ErrorDetector(ABC):
     def detect_cas(self, cas: Cas) -> Tuple[Cas, List[SpellingError]]:
         """Detect spelling errors in a CAS.
 
+        This default implementation converts CAS to Text for backward compatibility.
+        Subclasses should override this method with a native CAS implementation
+        for better performance.
+
         Args:
             cas: CAS with text and optionally Token annotations
 
