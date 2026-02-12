@@ -32,6 +32,7 @@ requires-python = ">=3.10"
 dependencies = [
     "dkpro-cassis>=0.10.1,<0.11.0",
     "rapidfuzz>=3.14.3",
+    "transformers>=5.1.0",
 ]
 
 [project.optional-dependencies]

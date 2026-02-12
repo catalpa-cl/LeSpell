@@ -32,7 +32,7 @@ from lespell.spellchecker.detection import (
     ErrorDetector,
 )
 from lespell.spellchecker.errors import SpellingError
-from lespell.spellchecker.ranking import CostBasedRanker, Ranker
+from lespell.spellchecker.ranking import CostBasedRanker, MaskedLanguageModelRanker, Ranker
 from lespell.spellchecker.spellchecker import SpellingChecker
 
 __all__ = [
@@ -63,6 +63,7 @@ __all__ = [
     # Ranking
     "Ranker",
     "CostBasedRanker",
+    "MaskedLanguageModelRanker",
     # Main Orchestrator
     "SpellingChecker",
 ]
