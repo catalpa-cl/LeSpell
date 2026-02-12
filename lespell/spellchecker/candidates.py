@@ -274,14 +274,6 @@ class LevenshteinCandidateGenerator(CandidateGenerator):
 
         self.dictionary = merged
 
-    def _load_dictionary(self, path: str) -> None:
-        """Load dictionary from file (one word per line)."""
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"Dictionary not found: {path}")
-
-        with open(path, "r", encoding="utf-8") as f:
-            self.dictionary = set(line.strip() for line in f if line.strip())
-
     def _levenshtein_distance(self, s1: str, s2: str) -> float:
         """Calculate weighted Levenshtein distance."""
         if len(s1) < len(s2):
@@ -392,14 +384,6 @@ class KeyboardDistanceCandidateGenerator(CandidateGenerator):
         if keyboard_matrix_path:
             self._load_keyboard_matrix(keyboard_matrix_path)
 
-    def _load_dictionary(self, path: str) -> None:
-        """Load dictionary from file."""
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"Dictionary not found: {path}")
-
-        with open(path, "r", encoding="utf-8") as f:
-            self.dictionary = set(line.strip() for line in f if line.strip())
-
     def _load_keyboard_matrix(self, path: str) -> None:
         """Load keyboard distance matrix (format: char1 TAB char2 TAB distance)."""
         if not os.path.exists(path):
@@ -506,14 +490,6 @@ class PhonemeCandidateGenerator(CandidateGenerator):
 
         self.dictionary = merged
 
-    def _load_dictionary(self, path: str) -> None:
-        """Load dictionary from file."""
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"Dictionary not found: {path}")
-
-        with open(path, "r", encoding="utf-8") as f:
-            self.dictionary = set(line.strip() for line in f if line.strip())
-
     def _grapheme_to_phoneme(self, word: str) -> str:
         """Convert grapheme to phoneme representation.
 
@@ -582,23 +558,6 @@ class MissingSpaceCandidateGenerator(CandidateGenerator):
         self.min_word_length = min_word_length
         self.space_insertion_cost = space_insertion_cost
         self.max_candidates = max_candidates
-
-        # Load dictionary from provided source
-        if dictionary is not None:
-            self.dictionary = dictionary
-        elif dictionary_path is not None:
-            self.dictionary: Set[str] = set()
-            self._load_dictionary(dictionary_path)
-        else:
-            self.dictionary = set()
-
-    def _load_dictionary(self, path: str) -> None:
-        """Load dictionary from file."""
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"Dictionary not found: {path}")
-
-        with open(path, "r", encoding="utf-8") as f:
-            self.dictionary = set(line.strip() for line in f if line.strip())
 
     def _find_segmentations(self, word: str, start: int = 0) -> List[List[str]]:
         """Find valid dictionary word segmentations using DP.

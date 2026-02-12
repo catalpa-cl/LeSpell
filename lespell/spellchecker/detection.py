@@ -3,7 +3,7 @@
 import os
 import re
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Union
+from typing import List, Tuple
 
 from cassis import Cas
 
@@ -13,7 +13,6 @@ from lespell.spellchecker.cas_utils import (
     cas_to_text,
     get_tokens_from_cas,
     has_tokens,
-    text_to_cas,
     tokenize_cas,
 )
 from lespell.spellchecker.errors import SpellingError

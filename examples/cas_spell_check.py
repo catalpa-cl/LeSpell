@@ -111,14 +111,14 @@ def main():
 
     # Traditional API
     result_text = checker.check_text(text3)
-    print(f"\nTraditional API:")
+    print("\nTraditional API:")
     print(f"  Text: {text3}")
     print(f"  Errors: {result_text['error_count']}")
 
     # CAS API
     cas3 = create_cas(text3)
     cas3, result_cas = checker.check_cas(cas3)
-    print(f"\nCAS API:")
+    print("\nCAS API:")
     print(f"  Text: {text3}")
     print(f"  Errors: {result_cas['error_count']}")
 

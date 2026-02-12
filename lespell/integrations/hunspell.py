@@ -45,7 +45,7 @@ class HunspellWrapper:
             else:
                 self.spell = hunspell.HunSpell(language)
         except Exception as e:
-            raise ImportError(f"Failed to initialize Hunspell: {e}")
+            raise ImportError(f"Failed to initialize Hunspell: {e}") from e
 
         self.dic_path = dic_path
         self.aff_path = aff_path

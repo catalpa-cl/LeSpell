@@ -1,6 +1,6 @@
 """Main spelling checker orchestrator."""
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 
 from cassis import Cas
 
@@ -8,11 +8,7 @@ from lespell.io import SpellingItem
 from lespell.spellchecker.annotations import Text
 from lespell.spellchecker.candidates import CandidateGenerator
 from lespell.spellchecker.cas_utils import (
-    cas_to_text,
-    create_cas,
-    get_spelling_errors,
     has_tokens,
-    text_to_cas,
     tokenize_cas,
 )
 from lespell.spellchecker.detection import ErrorDetector

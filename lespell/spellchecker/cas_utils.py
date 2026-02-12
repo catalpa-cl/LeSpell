@@ -1,6 +1,6 @@
 """CAS utilities for working with dkpro-cassis."""
 
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 from cassis import Cas, load_dkpro_core_typesystem
 

@@ -1,6 +1,6 @@
 """LanguageTool integration for error detection and correction."""
 
-from typing import Any, List, Optional, Dict
+from typing import Any, Dict, List, Optional
 
 from lespell.io import SpellingItem
 
@@ -191,27 +191,6 @@ class LanguageToolCorrector:
 
         Args:
             items: List of SpellingItem objects
-
-        Returns:
-            List of SpellingItem objects with LT corrections applied
-        """
-        corrected_items = []
-
-        for item in items:
-            corrected_text = self.correct_text(item.text)
-
-            corrected_item = SpellingItem(
-                corpus_name=item.corpus_name,
-                text_id=item.text_id + "_lt_corrected",
-                text=corrected_text,
-                corrections=item.corrections.copy(),
-                correction_error_types=item.correction_error_types.copy(),
-                grammar_corrections=item.grammar_corrections.copy(),
-            )
-
-            corrected_items.append(corrected_item)
-
-        return corrected_items
 
         Returns:
             List of SpellingItem objects with LT corrections applied

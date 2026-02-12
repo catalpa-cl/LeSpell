@@ -58,7 +58,7 @@ class CorrectionEvaluator:
         Returns:
             True if gold correction in top-k
         """
-        for i, candidate in enumerate(candidates[:k]):
+        for _,candidate in enumerate(candidates[:k]):
             if candidate.lower() == gold_correction.lower():
                 return True
         return False

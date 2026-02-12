@@ -137,7 +137,8 @@ class EnsembleRanker(Ranker):
             ranked = ranker.rank(candidates, context, misspelled)
             for rank, (word, cost) in enumerate(ranked):
                 # Inverse of rank (lower rank = higher score)
-                score = weight * (1.0 / (rank + 1))
+                normalized_cost = 1.0 - cost  # assuming cost is 0-1
+                score = weight * (1.0 / (rank + 1)) * normalized_cost
                 word_scores[word] = word_scores.get(word, 0) + score
 
         # Sort by ensemble score

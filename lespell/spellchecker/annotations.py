@@ -74,6 +74,6 @@ class Pipeline:
     def process(self, text: Text) -> Text:
         """Process text through all pipeline stages."""
         result = text
-        for stage_name, processor in self.stages:
+        for _, processor in self.stages:
             result = processor(result)
         return result
