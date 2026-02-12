@@ -28,9 +28,10 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Linguistics",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "dkpro-cassis>=0.10.1,<0.11.0",
+    "rapidfuzz>=3.14.3",
 ]
 
 [project.optional-dependencies]
@@ -55,26 +56,6 @@ Homepage = "https://github.com/yourusername/lespell"
 Documentation = "https://lespell.readthedocs.io"
 Repository = "https://github.com/yourusername/lespell.git"
 Issues = "https://github.com/yourusername/lespell/issues"
-
-[tool.poetry]
-name = "lespell"
-version = "0.1.0"
-description = "A library for spelling error detection and analysis in learner corpora"
-authors = ["Your Name <you@example.com>"]
-packages = [{include = "lespell"}]
-
-[tool.poetry.dependencies]
-python = "^3.9"
-dkpro-cassis = "^0.10.1"
-rapidfuzz = "^3.0.0"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.0"
-pytest-cov = "^4.0"
-black = "^23.0"
-ruff = "^0.1.0"
-mypy = "^1.0"
-isort = "^5.12"
 
 [tool.black]
 line-length = 100
