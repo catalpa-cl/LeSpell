@@ -3,9 +3,19 @@
 import os
 import re
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import List, Tuple, Union
+
+from cassis import Cas
 
 from lespell.spellchecker.annotations import Annotation, Text
+from lespell.spellchecker.cas_utils import (
+    add_spelling_error,
+    cas_to_text,
+    get_tokens_from_cas,
+    has_tokens,
+    text_to_cas,
+    tokenize_cas,
+)
 from lespell.spellchecker.errors import SpellingError
 
 
@@ -23,6 +33,31 @@ class ErrorDetector(ABC):
             Tuple of (annotated Text with spelling_error annotations, list of SpellingError objects)
         """
         pass
+
+    def detect_cas(self, cas: Cas) -> Tuple[Cas, List[SpellingError]]:
+        """Detect spelling errors in a CAS.
+
+        This default implementation converts CAS to Text for backward compatibility.
+        Subclasses should override this method with a native CAS implementation
+        for better performance.
+
+        Args:
+            cas: CAS with text and optionally Token annotations
+
+        Returns:
+            Tuple of (CAS with SpellingAnomaly annotations, list of SpellingError objects)
+        """
+        # Convert CAS to Text for backward compatibility
+        text = cas_to_text(cas)
+
+        # Use existing detect method
+        text, errors = self.detect(text)
+
+        # Add spelling errors back to CAS
+        for error in errors:
+            add_spelling_error(cas, error.start, error.end)
+
+        return cas, errors
 
 
 class DictionaryErrorDetector(ErrorDetector):
@@ -84,10 +119,7 @@ class DictionaryErrorDetector(ErrorDetector):
 
             # Check if marked as excluded (numeric, punctuation, etc.)
             overlapping = text.get_overlapping_annotations(start, end)
-            if any(
-                a.type in {"numeric", "punctuation"}
-                for a in overlapping
-            ):
+            if any(a.type in {"numeric", "punctuation"} for a in overlapping):
                 continue  # Excluded
 
             # Check if word is in dictionary
@@ -107,6 +139,49 @@ class DictionaryErrorDetector(ErrorDetector):
             errors.append(error)
 
         return text, errors
+
+    def detect_cas(self, cas: Cas) -> Tuple[Cas, List[SpellingError]]:
+        """Detect errors in CAS using dictionary lookup.
+
+        Tokenizes the CAS if it doesn't have Token annotations.
+
+        Args:
+            cas: CAS with text and optionally Token annotations
+
+        Returns:
+            Tuple of (CAS with SpellingAnomaly annotations, list of SpellingError objects)
+        """
+        # Tokenize if needed
+        if not has_tokens(cas):
+            tokenize_cas(cas)
+
+        # Get tokens from CAS
+        word_pattern = re.compile(r"^[a-zA-Z\'-]+$")
+        tokens = get_tokens_from_cas(cas)
+        errors = []
+
+        for start, end, token in tokens:
+            if not word_pattern.match(token):
+                continue  # Not a word
+
+            # Check if word is in dictionary
+            if token.lower() in self.dictionary:
+                continue  # Known word
+
+            # Add spelling error to CAS
+            add_spelling_error(cas, start, end)
+
+            # Create SpellingError object
+            error = SpellingError(
+                start=start,
+                end=end,
+                word=token,
+                error_type="spelling_error",
+                metadata={"detector": "dictionary"},
+            )
+            errors.append(error)
+
+        return cas, errors
 
 
 class CompositeErrorDetector(ErrorDetector):
