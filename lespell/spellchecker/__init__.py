@@ -16,6 +16,16 @@ from lespell.spellchecker.candidates import (
     LevenshteinCandidateGenerator,
     MissingSpaceCandidateGenerator,
 )
+from lespell.spellchecker.cas_utils import (
+    add_spelling_error,
+    cas_to_text,
+    create_cas,
+    get_spelling_errors,
+    get_tokens_from_cas,
+    has_tokens,
+    text_to_cas,
+    tokenize_cas,
+)
 from lespell.spellchecker.detection import (
     CompositeErrorDetector,
     DictionaryErrorDetector,
@@ -30,6 +40,15 @@ __all__ = [
     "Annotation",
     "Pipeline",
     "Text",
+    # CAS utilities
+    "create_cas",
+    "tokenize_cas",
+    "cas_to_text",
+    "text_to_cas",
+    "has_tokens",
+    "get_tokens_from_cas",
+    "add_spelling_error",
+    "get_spelling_errors",
     # Error Detection
     "ErrorDetector",
     "DictionaryErrorDetector",

@@ -1,10 +1,20 @@
 """Main spelling checker orchestrator."""
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple, Union
+
+from cassis import Cas
 
 from lespell.io import SpellingItem
 from lespell.spellchecker.annotations import Text
 from lespell.spellchecker.candidates import CandidateGenerator
+from lespell.spellchecker.cas_utils import (
+    cas_to_text,
+    create_cas,
+    get_spelling_errors,
+    has_tokens,
+    text_to_cas,
+    tokenize_cas,
+)
 from lespell.spellchecker.detection import ErrorDetector
 from lespell.spellchecker.ranking import CostBasedRanker, Ranker
 
@@ -35,9 +45,86 @@ class SpellingChecker:
         self.candidate_generators = candidate_generators
         self.ranker = ranker or CostBasedRanker()
 
-    def check_text(
-        self, text_content: str, context_window: int = 5
-    ) -> Dict:
+    def check_cas(self, cas: Cas, context_window: int = 5) -> Tuple[Cas, Dict]:
+        """Check a CAS for spelling errors using three-phase workflow.
+
+        Args:
+            cas: CAS object with text and optionally Token annotations.
+                 If no Token annotations exist, will tokenize internally.
+            context_window: Context window size for each error
+
+        Returns:
+            Tuple of (CAS with SpellingAnomaly annotations, dictionary with errors and suggestions)
+        """
+        # Ensure CAS has tokens (tokenize if needed)
+        if not has_tokens(cas):
+            tokenize_cas(cas)
+
+        # Phase 1: Error Detection (adds SpellingAnomaly annotations to CAS)
+        cas, errors = self.detector.detect_cas(cas)
+
+        text_content = cas.sofa_string
+        results = []
+
+        # Phases 2 & 3: Correction Generation and Ranking
+        for error in errors:
+            word = error.word
+
+            # Get context
+            context_start = max(0, error.start - context_window * 5)
+            context_end = min(len(text_content), error.end + context_window * 5)
+            context = text_content[context_start:context_end]
+
+            # Generate candidates from all generators
+            all_candidates = []
+            for generator in self.candidate_generators:
+                try:
+                    generated = generator.generate(word, context)
+                    for cand_word, cost in generated:
+                        all_candidates.append(
+                            (cand_word, cost, generator.__class__.__name__)
+                        )
+                except (NotImplementedError, Exception):
+                    # Skip generators that aren't implemented or fail
+                    pass
+
+            # Deduplicate candidates (keep lowest cost)
+            seen = {}
+            for cand_word, cost, method in all_candidates:
+                if cand_word not in seen or cost < seen[cand_word][0]:
+                    seen[cand_word] = (cost, method)
+
+            # Convert back to list, sort, and keep top 10
+            candidates = [(w, c, m) for w, (c, m) in seen.items()]
+            candidates.sort(key=lambda x: x[1])
+            candidates = candidates[:10]
+
+            # Rank candidates
+            ranked = self.ranker.rank(
+                [(w, c) for w, c, _ in candidates],
+                context=context,
+                misspelled=word,
+            )
+
+            results.append(
+                {
+                    "start": error.start,
+                    "end": error.end,
+                    "word": word,
+                    "context": context,
+                    "suggestions": [w for w, _ in ranked[:5]],
+                    "scores": [c for _, c in ranked[:5]],
+                    "methods": [m for _, _, m in candidates[:5]],
+                }
+            )
+
+        return cas, {
+            "text": text_content,
+            "errors": results,
+            "error_count": len(errors),
+        }
+
+    def check_text(self, text_content: str, context_window: int = 5) -> Dict:
         """Check text for spelling errors using three-phase workflow.
 
         Args:

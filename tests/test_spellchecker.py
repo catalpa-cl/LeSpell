@@ -49,7 +49,7 @@ class TestSpellingChecker(unittest.TestCase):
     def test_checker_initialization(self):
         """Test SpellingChecker initialization."""
         self.assertIsNotNone(self.checker.detector)
-        self.assertIsNotNone(self.checker.ensemble)
+        self.assertIsNotNone(self.checker.candidate_generators)
         self.assertIsNotNone(self.checker.ranker)
 
     def test_check_text_basic(self):
@@ -135,7 +135,7 @@ class TestSpellingChecker(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             LevenshteinCandidateGenerator(language="en")
 
-        self.assertIn("REQUIRES a dictionary", str(context.exception))
+        self.assertIn("requires a dictionary", str(context.exception))
 
     def test_levenshtein_accepts_dict_parameter(self):
         """Test that LevenshteinCandidateGenerator accepts dictionary parameter."""
