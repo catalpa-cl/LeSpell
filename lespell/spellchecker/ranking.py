@@ -104,7 +104,7 @@ class MaskedLanguageModelRanker(Ranker):
             raise RuntimeError(
                 f"Failed to load model '{self.model_name}': {e}. "
                 f"Make sure the model name is correct and 'transformers' is installed."
-            )
+            ) from e
 
     def _score_with_huggingface(
         self, candidates: List[str], context: str, misspelled: Optional[str]
@@ -146,7 +146,7 @@ class MaskedLanguageModelRanker(Ranker):
                 targets=candidates,
                 top_k=len(candidates),
             )
-        except Exception as e:
+        except Exception:
             # If something goes wrong with scoring, return empty dict
             # (will trigger fallback to cost-based ranking)
             return {}
