@@ -6,6 +6,10 @@ from lespell.integrations.languagetool import (
     LanguageToolDetector,
     LanguageToolWrapper,
 )
+from lespell.integrations.pyspellchecker import (
+    PyspellcheckerErrorDetector,
+    PyspellcheckerWrapper,
+)
 
 __all__ = [
     "LanguageToolDetector",
@@ -13,4 +17,6 @@ __all__ = [
     "LanguageToolWrapper",
     "HunspellErrorDetector",
     "HunspellWrapper",
+    "PyspellcheckerErrorDetector",
+    "PyspellcheckerWrapper",
 ]
