@@ -77,19 +77,44 @@ toefl = ToeflConverter()
 items = toefl.convert("path/to/toefl/corpus")
 ```
 
-### Error Detection and Correction
+### External Integrations
+
+The library provides wrapper classes for popular spell checking libraries with a unified interface:
 
 ```python
-from lespell.integrations import LanguageToolDetector, LanguageToolCorrector
+from lespell.integrations import (
+    PyspellcheckerWrapper,
+    HunspellWrapper,
+    LanguageToolWrapper,
+    SpellingCheckerBase,
+)
 
-# Detect spelling errors
-detector = LanguageToolDetector(language="en")
-errors = detector.detect_errors("This is a tst.")
+# All wrappers implement the same interface:
+# - check(word: str) -> bool: Check if a word is correct
+# - correct(word: str) -> str: Get best correction for a word
+# - correct_text(text: str) -> str: Correct full text
 
-# Correct text
-corrector = LanguageToolCorrector(language="en")
-corrected = corrector.correct_text("This is a tst.")
-print(corrected)  # "This is a test."
+# PySpellChecker
+pyspell = PyspellcheckerWrapper(language="en")
+is_correct = pyspell.check("speling")  # False
+best_correction = pyspell.correct("speling")  # "spelling"
+corrected_text = pyspell.correct_text("This is a speling error")  # "This is a spelling error"
+
+# Hunspell
+hunspell = HunspellWrapper(language="en")
+print(hunspell.check("correct"))  # True
+print(hunspell.correct("speling"))  # "spelling"
+
+# LanguageTool (also checks grammar)
+language_tool = LanguageToolWrapper(language="en")
+print(language_tool.check_word("correct"))  # True
+print(language_tool.correct("tst"))  # "test"
+print(language_tool.correct_text("This is a tst."))  # "This is a test."
+
+# All implement SpellingCheckerBase
+assert isinstance(pyspell, SpellingCheckerBase)
+assert isinstance(hunspell, SpellingCheckerBase)
+assert isinstance(language_tool, SpellingCheckerBase)
 ```
 
 ### Error Analysis

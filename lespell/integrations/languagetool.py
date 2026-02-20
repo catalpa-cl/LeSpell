@@ -1,8 +1,8 @@
-"""LanguageTool integration for error detection and correction."""
+"""LanguageTool integration wrapper."""
 
-from typing import Any, Dict, List, Optional
+from typing import List
 
-from lespell.io import SpellingItem
+from lespell.integrations.base import SpellingCheckerBase
 
 try:
     import language_tool_python
@@ -12,7 +12,7 @@ except ImportError:
     HAS_LANGUAGE_TOOL = False
 
 
-class LanguageToolWrapper:
+class LanguageToolWrapper(SpellingCheckerBase):
     """Wrapper for LanguageTool library initialization and usage."""
 
     def __init__(self, language: str = "en"):
@@ -33,8 +33,45 @@ class LanguageToolWrapper:
         self.language = language
         self.tool = language_tool_python.LanguageTool(language)
 
-    def check(self, text: str) -> List[Dict[str, Any]]:
-        """Check text for errors.
+    def check(self, word: str) -> bool:
+        """Check if a single word is correctly spelled.
+
+        Args:
+            word: Word to check
+
+        Returns:
+            True if word is correct, False if there are errors
+        """
+        matches = self.tool.check(word)
+        return len(matches) == 0
+
+    def correct(self, word: str) -> str:
+        """Get the best correction for a word.
+
+        Args:
+            word: Word to correct
+
+        Returns:
+            Best correction suggestion, or the original word if no suggestions
+        """
+        matches = self.tool.check(word)
+        if matches and matches[0].replacements:
+            return matches[0].replacements[0]
+        return word
+
+    def correct_text(self, text: str) -> str:
+        """Correct a full text by fixing spelling and grammar errors.
+
+        Args:
+            text: Text to correct
+
+        Returns:
+            Corrected text
+        """
+        return self.tool.correct(text)
+
+    def check_text(self, text: str) -> List[dict]:
+        """Check text for errors and return detailed error information.
 
         Args:
             text: Text to check
@@ -61,17 +98,6 @@ class LanguageToolWrapper:
 
         return errors
 
-    def correct(self, text: str) -> str:
-        """Automatically correct text.
-
-        Args:
-            text: Text to correct
-
-        Returns:
-            Corrected text
-        """
-        return self.tool.correct(text)
-
     def get_suggestions(self, text: str, offset: int, length: int) -> List[str]:
         """Get suggestions for error at given position.
 
@@ -90,125 +116,3 @@ class LanguageToolWrapper:
                 return match.replacements if match.replacements else []
 
         return []
-
-
-class LanguageToolDetector:
-    """Detects errors using LanguageTool API."""
-
-    def __init__(self, languagetool_wrapper: LanguageToolWrapper):
-        """Initialize detector.
-
-        Args:
-            languagetool_wrapper: Configured LanguageToolWrapper instance
-        """
-        self.tool = languagetool_wrapper
-
-    def detect_errors(self, text: str) -> List[dict]:
-        """Detect errors in text.
-
-        Args:
-            text: Text to check
-
-        Returns:
-            List of error dictionaries with keys:
-                - offset: Character offset of error
-                - length: Length of error
-                - message: Error message
-                - replacements: List of suggested corrections
-        """
-        return self.tool.check(text)
-
-    def extract_error_items(self, items: List[SpellingItem]) -> List[dict]:
-        """Extract errors from SpellingItem list.
-
-        Args:
-            items: List of SpellingItem objects
-
-        Returns:
-            List of detected errors with context
-        """
-        all_errors = []
-
-        for item in items:
-            errors = self.detect_errors(item.text)
-
-            for error in errors:
-                all_errors.append(
-                    {
-                        "corpus": item.corpus_name,
-                        "text_id": item.text_id,
-                        "offset": error["offset"],
-                        "length": error["length"],
-                        "error_text": item.text[
-                            error["offset"] : error["offset"] + error["length"]
-                        ],
-                        "message": error["message"],
-                        "suggestions": error["replacements"],
-                    }
-                )
-
-        return all_errors
-
-
-class LanguageToolCorrector:
-    """Corrects errors using LanguageTool suggestions."""
-
-    def __init__(self, languagetool_wrapper: LanguageToolWrapper):
-        """Initialize corrector.
-
-        Args:
-            languagetool_wrapper: Configured LanguageToolWrapper instance
-        """
-        self.tool = languagetool_wrapper
-
-    def correct_text(self, text: str) -> str:
-        """Automatically correct text.
-
-        Args:
-            text: Text to correct
-
-        Returns:
-            Corrected text
-        """
-        return self.tool.correct(text)
-
-    def get_best_correction(self, text: str, offset: int, length: int) -> Optional[str]:
-        """Get best correction for error at given position.
-
-        Args:
-            text: Full text
-            offset: Character offset of error
-            length: Length of error
-
-        Returns:
-            Best correction suggestion or None if no suggestions
-        """
-        suggestions = self.tool.get_suggestions(text, offset, length)
-        return suggestions[0] if suggestions else None
-
-    def correct_items(self, items: List[SpellingItem]) -> List[SpellingItem]:
-        """Apply LanguageTool corrections to items.
-
-        Args:
-            items: List of SpellingItem objects
-
-        Returns:
-            List of SpellingItem objects with LT corrections applied
-        """
-        corrected_items = []
-
-        for item in items:
-            corrected_text = self.correct_text(item.text)
-
-            corrected_item = SpellingItem(
-                corpus_name=item.corpus_name,
-                text_id=item.text_id + "_lt_corrected",
-                text=corrected_text,
-                corrections=item.corrections.copy(),
-                correction_error_types=item.correction_error_types.copy(),
-                grammar_corrections=item.grammar_corrections.copy(),
-            )
-
-            corrected_items.append(corrected_item)
-
-        return corrected_items

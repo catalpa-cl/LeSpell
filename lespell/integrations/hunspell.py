@@ -1,11 +1,9 @@
-"""Hunspell integration for error detection and candidate generation."""
+"""Hunspell integration wrapper."""
 
 import re
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
-from lespell.spellchecker.annotations import Annotation, Text
-from lespell.spellchecker.detection import ErrorDetector
-from lespell.spellchecker.errors import SpellingError
+from lespell.integrations.base import SpellingCheckerBase
 
 try:
     import hunspell
@@ -14,7 +12,7 @@ except ImportError:
     HAS_HUNSPELL = False
 
 
-class HunspellWrapper:
+class HunspellWrapper(SpellingCheckerBase):
     """Wrapper for Hunspell library initialization and usage."""
 
     def __init__(
@@ -52,64 +50,49 @@ class HunspellWrapper:
         self.language = language
 
     def check(self, word: str) -> bool:
-        """Check if word is correctly spelled."""
-        return self.spell.spell(word)
-
-    def suggest(self, word: str) -> List[str]:
-        """Get spelling suggestions for a misspelled word."""
-        return self.spell.suggest(word)
-
-
-class HunspellErrorDetector(ErrorDetector):
-    """Detect errors using Hunspell dictionary."""
-
-    def __init__(
-        self,
-        dic_path: Optional[str] = None,
-        aff_path: Optional[str] = None,
-        language: str = "en",
-    ):
-        """Initialize Hunspell error detector.
+        """Check if word is correctly spelled.
 
         Args:
-            dic_path: Path to Hunspell .dic file (optional if language provided)
-            aff_path: Path to Hunspell .aff file (optional if language provided)
-            language: Language code for Hunspell (default: 'en')
+            word: Word to check
 
-        Raises:
-            ImportError: If hunspell library is not installed
+        Returns:
+            True if word is correct, False otherwise
         """
-        self.hunspell = HunspellWrapper(dic_path, aff_path, language)
+        return self.spell.spell(word)
 
-    def detect(self, text: Text) -> Tuple[Text, List[SpellingError]]:
-        """Detect errors using Hunspell."""
-        word_pattern = re.compile(r"^[a-zA-Z\'-]+$")
-        tokens = text.get_tokens()
-        errors = []
+    def correct(self, word: str) -> str:
+        """Get the best correction for a misspelled word.
 
-        for start, end, token in tokens:
-            if not word_pattern.match(token):
-                continue  # Not a word
+        Args:
+            word: Word to correct
 
-            # Check if marked as known or excluded
-            overlapping = text.get_overlapping_annotations(start, end)
-            if any(
-                a.type in {"numeric", "punctuation"}
-                for a in overlapping
-            ):
-                continue  # Excluded
+        Returns:
+            Best correction suggestion, or the original word if no suggestions
+        """
+        suggestions = self.spell.suggest(word)
+        return suggestions[0] if suggestions else word
 
-            # Check with Hunspell
-            if not self.hunspell.check(token):
-                annotation = Annotation(
-                    type="spelling_error",
-                    start=start,
-                    end=end,
-                    metadata={"token": token, "detector": "hunspell"},
-                )
-                text.add_annotation(annotation)
+    def correct_text(self, text: str) -> str:
+        """Correct a full text by fixing spelling errors.
 
-                error = SpellingError.from_annotation(annotation, text.content)
-                errors.append(error)
+        Args:
+            text: Text to correct
 
-        return text, errors
+        Returns:
+            Corrected text
+        """
+        word_pattern = re.compile(r"[a-zA-Z\'-]+")
+        corrected_text = text
+        offset = 0
+
+        for match in word_pattern.finditer(text):
+            word = match.group()
+            corrected_word = self.correct(word)
+            
+            if corrected_word != word:
+                start = match.start() + offset
+                end = start + len(word)
+                corrected_text = corrected_text[:start] + corrected_word + corrected_text[end:]
+                offset += len(corrected_word) - len(word)
+
+        return corrected_text
