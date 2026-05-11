@@ -7,6 +7,35 @@ from spellchecker import SpellChecker
 
 from lespell.integrations.base import SpellingCheckerBase
 
+# We want to matches as a "word" any run of letters.
+# Run is defined unicode-aware, it covers umlauts,
+# accented characters, etc.), optionally joined by single apostrophes
+# or hyphens (e.g. "don't", "well-known"). 
+# We use ``[^\W\d_]`` instead of ``[a-zA-Z]`` so words in non-ASCII alphabets 
+# aren't split  into chunks at every umlaut, which would feed bits 
+# like "m"/"ö"/"gliche" to the spell checker.
+_WORD_RE = re.compile(r"[^\W\d_]+(?:['\-][^\W\d_]+)*", re.UNICODE)
+
+
+def _reapply_case(original: str, suggestion: str) -> str:
+    """Cast ``suggestion`` into the same casing pattern as ``original``.
+
+    The pyspellchecker normalises everything to lowercase internally and
+    returns lowercase corrections, which removes German noun
+    capitalisation and sentence-initial caps. 
+    We re-construct the original casing pattern so that 
+    - all-caps stays all-caps, 
+    - Title-case stays Title-case, 
+    - everything else passes through as-is.
+    """
+    if not suggestion:
+        return original
+    if original.isupper() and len(original) > 1:
+        return suggestion.upper()
+    if original[:1].isupper() and original[1:].islower():
+        return suggestion[:1].upper() + suggestion[1:]
+    return suggestion
+
 
 class PyspellcheckerWrapper(SpellingCheckerBase):
     """Wrapper for PySpellChecker library initialization and usage."""
@@ -44,7 +73,9 @@ class PyspellcheckerWrapper(SpellingCheckerBase):
             return word
 
         suggestion = self.spell.correction(word.lower())
-        return suggestion if suggestion else word
+        if not suggestion:
+            return word
+        return _reapply_case(word, suggestion)
 
     def correct_text(self, text: str) -> str:
         """Correct a full text by fixing spelling errors.
@@ -55,13 +86,12 @@ class PyspellcheckerWrapper(SpellingCheckerBase):
         Returns:
             Corrected text
         """
-        # Split text into tokens (words and non-words), keeping delimiters
-        tokens = re.split(r"([a-zA-Z\'-]+)", text)
-        
-        # Correct only the word tokens (odd indices after split)
-        corrected_tokens = [
-            self.correct(token) if i % 2 == 1 else token
-            for i, token in enumerate(tokens)
-        ]
-        
-        return "".join(corrected_tokens)
+        # Skip all-caps tokens of length > 1 (likely acronyms — pyspell
+        # has no reliable signal to "correct" them).
+        def _fix(match: "re.Match[str]") -> str:
+            word = match.group(0)
+            if word.isupper() and len(word) > 1:
+                return word
+            return self.correct(word)
+
+        return _WORD_RE.sub(_fix, text)
