@@ -13,9 +13,27 @@ def main():
     """Demonstrate basic spell checking."""
     # Set up dictionary
     dictionary = {
-        "this", "is", "a", "test", "of", "the", "spelling", "checker",
-        "quick", "brown", "fox", "jumps", "over", "lazy", "dog",
-        "received", "package", "yesterday", "excellent", "communication", "skills",
+        "this",
+        "is",
+        "a",
+        "test",
+        "of",
+        "the",
+        "spelling",
+        "checker",
+        "quick",
+        "brown",
+        "fox",
+        "jumps",
+        "over",
+        "lazy",
+        "dog",
+        "received",
+        "package",
+        "yesterday",
+        "excellent",
+        "communication",
+        "skills",
     }
 
     # Create detector

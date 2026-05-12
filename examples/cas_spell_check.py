@@ -127,13 +127,15 @@ def main():
     print("\n" + "=" * 70)
     print("Benefits of CAS API:")
     print("=" * 70)
-    print("""
+    print(
+        """
     1. Standard format: CAS is a standard from UIMA/DKPro
     2. Rich annotations: Store multiple annotation layers
     3. Interoperability: Works with other NLP tools
     4. Flexibility: Use your own tokenization or let LeSpell tokenize
     5. Handoff: Error detection and correction communicate via CAS
-    """)
+    """
+    )
 
 
 if __name__ == "__main__":

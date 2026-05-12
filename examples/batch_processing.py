@@ -15,9 +15,22 @@ from lespell.spellchecker import (
 def main():
     """Process multiple spelling items in batch."""
     dictionary = {
-        "the", "student", "received", "a", "good", "grade",
-        "she", "has", "excellent", "writing", "skills",
-        "they", "were", "happy", "with", "results",
+        "the",
+        "student",
+        "received",
+        "a",
+        "good",
+        "grade",
+        "she",
+        "has",
+        "excellent",
+        "writing",
+        "skills",
+        "they",
+        "were",
+        "happy",
+        "with",
+        "results",
     }
 
     detector = DictionaryErrorDetector(dictionary=dictionary)

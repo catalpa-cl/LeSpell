@@ -34,7 +34,7 @@ class TestLanguageToolWrapper:
         """Test getting best correction for a misspelled word."""
         wrapper = LanguageToolWrapper(language="en")
         correction = wrapper.correct("tst")
-        
+
         # Should return a string
         assert isinstance(correction, str)
         # Most likely it will be "test"
@@ -45,7 +45,7 @@ class TestLanguageToolWrapper:
         wrapper = LanguageToolWrapper(language="en")
         text = "This is a tst."
         corrected = wrapper.correct_text(text)
-        
+
         # Should be a string
         assert isinstance(corrected, str)
         # Should be different from original or at least valid
@@ -55,10 +55,10 @@ class TestLanguageToolWrapper:
         """Test checking text for errors and returning error details."""
         wrapper = LanguageToolWrapper(language="en")
         errors = wrapper.check_text("This is a tst.")
-        
+
         # Should return a list of error dicts
         assert isinstance(errors, list)
-        
+
         if errors:
             error = errors[0]
             assert "offset" in error
@@ -71,7 +71,7 @@ class TestLanguageToolWrapper:
         wrapper = LanguageToolWrapper(language="en")
         text = "This is a tst."
         errors = wrapper.check_text(text)
-        
+
         if errors:
             error = errors[0]
             suggestions = wrapper.get_suggestions(text, error["offset"], error["length"])

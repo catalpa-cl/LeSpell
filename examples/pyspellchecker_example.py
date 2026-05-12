@@ -11,7 +11,7 @@ def main():
 
     # Example: Check individual words
     test_words = ["tset", "speling", "correct", "communication"]
-    
+
     print("Word-level checking:")
     for word in test_words:
         is_correct = wrapper.check(word)
@@ -20,7 +20,7 @@ def main():
             print(f"  '{word}': suggestions = {suggestions[:3]}")
         else:
             print(f"  '{word}': correct")
-    
+
     print()
 
 

@@ -14,9 +14,27 @@ from lespell.spellchecker import (
 def create_test_dictionary_set():
     """Create a simple test dictionary as set."""
     return {
-        "this", "is", "a", "test", "of", "the", "spelling", "checker",
-        "quick", "brown", "fox", "jumps", "over", "lazy", "dog",
-        "received", "package", "yesterday", "excellent", "communication", "skills",
+        "this",
+        "is",
+        "a",
+        "test",
+        "of",
+        "the",
+        "spelling",
+        "checker",
+        "quick",
+        "brown",
+        "fox",
+        "jumps",
+        "over",
+        "lazy",
+        "dog",
+        "received",
+        "package",
+        "yesterday",
+        "excellent",
+        "communication",
+        "skills",
     }
 
 
@@ -117,6 +135,7 @@ class TestSpellingChecker(unittest.TestCase):
         self.assertIsNotNone(checker)
         # Should use default CostBasedRanker
         self.assertIsNotNone(checker.ranker)
+
     def test_check_text_with_context(self):
         """Test that error results include context."""
         text = "The qwick brown fox jumps over the lazi dog."
@@ -140,10 +159,7 @@ class TestSpellingChecker(unittest.TestCase):
     def test_levenshtein_accepts_dict_parameter(self):
         """Test that LevenshteinCandidateGenerator accepts dictionary parameter."""
         dictionary = {"test", "dict"}
-        generator = LevenshteinCandidateGenerator(
-            language="en",
-            dictionary=dictionary
-        )
+        generator = LevenshteinCandidateGenerator(language="en", dictionary=dictionary)
         self.assertEqual(generator.dictionary, dictionary)
 
 

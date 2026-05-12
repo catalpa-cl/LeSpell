@@ -116,7 +116,7 @@ class TestMaskedLanguageModelRanker(unittest.TestCase):
         # Mock the _score_with_huggingface method
         mock_scores = {"test": 0.8, "tset": 0.2, "text": 0.9}
 
-        with patch.object(self.ranker, '_score_with_huggingface', return_value=mock_scores):
+        with patch.object(self.ranker, "_score_with_huggingface", return_value=mock_scores):
             result = self.ranker.rank(candidates, context=context, misspelled=misspelled)
 
             # Result should be sorted by LM score (highest probability = lowest cost)
@@ -144,7 +144,7 @@ class TestMaskedLanguageModelRanker(unittest.TestCase):
         # Mock partial scores (missing "text")
         mock_scores = {"test": 0.8, "tset": 0.2}
 
-        with patch.object(self.ranker, '_score_with_huggingface', return_value=mock_scores):
+        with patch.object(self.ranker, "_score_with_huggingface", return_value=mock_scores):
             result = self.ranker.rank(candidates, context=context, misspelled=misspelled)
 
             # All candidates should be present, unscored ones get penalty
@@ -170,15 +170,14 @@ class TestMaskedLanguageModelRanker(unittest.TestCase):
             {"token_str": "best", "score": 0.3},
         ]
 
-        with patch.object(self.ranker, 'pipe', create=True), \
-             patch.object(self.ranker, '_MaskedLanguageModelRanker__mask_token', '[MASK]'):
+        with patch.object(self.ranker, "pipe", create=True), patch.object(
+            self.ranker, "_MaskedLanguageModelRanker__mask_token", "[MASK]"
+        ):
             self.ranker.pipe = MagicMock(return_value=mock_results)
             self.ranker.tokenizer = MagicMock()
 
             scores = self.ranker._score_with_huggingface(
-                ["test", "text", "best"],
-                "This is a [MASK] sentence",
-                "word"
+                ["test", "text", "best"], "This is a [MASK] sentence", "word"
             )
 
             self.assertIn("test", scores)

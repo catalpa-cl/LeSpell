@@ -7,6 +7,7 @@ from lespell.integrations.base import SpellingCheckerBase
 
 try:
     import hunspell
+
     HAS_HUNSPELL = True
 except ImportError:
     HAS_HUNSPELL = False
@@ -32,10 +33,7 @@ class HunspellWrapper(SpellingCheckerBase):
             ImportError: If hunspell library is not installed
         """
         if not HAS_HUNSPELL:
-            raise ImportError(
-                "hunspell library required. "
-                "Install with: pip install hunspell"
-            )
+            raise ImportError("hunspell library required. " "Install with: pip install hunspell")
 
         try:
             if dic_path and aff_path:
@@ -88,7 +86,7 @@ class HunspellWrapper(SpellingCheckerBase):
         for match in word_pattern.finditer(text):
             word = match.group()
             corrected_word = self.correct(word)
-            
+
             if corrected_word != word:
                 start = match.start() + offset
                 end = start + len(word)

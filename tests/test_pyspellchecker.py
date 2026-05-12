@@ -30,7 +30,7 @@ class TestPyspellcheckerWrapper:
         """Test getting best correction for a misspelled word."""
         wrapper = PyspellcheckerWrapper(language="en")
         correction = wrapper.correct("speling")
-        
+
         assert correction == "spelling"
         assert isinstance(correction, str)
 
@@ -38,14 +38,14 @@ class TestPyspellcheckerWrapper:
         """Test that correct words return themselves."""
         wrapper = PyspellcheckerWrapper(language="en")
         correction = wrapper.correct("hello")
-        
+
         assert correction == "hello"
 
     def test_custom_dict_initialization(self):
         """Test initializing wrapper with custom dictionary."""
         custom_words = ["customword", "anotherword"]
         wrapper = PyspellcheckerWrapper(language="en", custom_dict=custom_words)
-        
+
         for word in custom_words:
             assert wrapper.check(word) is True
 
@@ -54,7 +54,7 @@ class TestPyspellcheckerWrapper:
         wrapper = PyspellcheckerWrapper(language="en")
         text = "This is a speling eror"
         corrected = wrapper.correct_text(text)
-        
+
         # Should be a string
         assert isinstance(corrected, str)
         # Should contain corrected words

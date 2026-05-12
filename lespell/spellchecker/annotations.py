@@ -38,9 +38,7 @@ class Text:
 
     def get_overlapping_annotations(self, start: int, end: int) -> List[Annotation]:
         """Get annotations that overlap a span."""
-        return [
-            a for a in self.annotations if not (a.end <= start or a.start >= end)
-        ]
+        return [a for a in self.annotations if not (a.end <= start or a.start >= end)]
 
     def get_tokens(self) -> List[tuple]:
         """Extract tokens from text (simple whitespace-based).

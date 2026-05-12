@@ -14,13 +14,13 @@ import xml.etree.ElementTree as ET
 
 corpus_path = "raw_corpora/litkey-xml/"
 
-#root element for our spelling-XML with corpus name as attribute
+# root element for our spelling-XML with corpus name as attribute
 corpus = ET.Element("corpus")
 corpus.set("name", "Litkey")
 
 for file in sorted(os.listdir(corpus_path)):
-    #if not file.startswith("01-338"):  continue #check single file (01-140)
-    tree = ET.parse(corpus_path+"/"+file)
+    # if not file.startswith("01-338"):  continue #check single file (01-140)
+    tree = ET.parse(corpus_path + "/" + file)
     root = tree.getroot()
 
     # initialize collection of correct tokens at the beginning of a text
@@ -40,43 +40,54 @@ for file in sorted(os.listdir(corpus_path)):
         orig = token.get("orig")
         target = token.get("target")
 
-        #orig = re.sub("_", " ", orig)  # replace merge marker with space
+        # orig = re.sub("_", " ", orig)  # replace merge marker with space
 
-        if orig != target or token.get("target_comments")  in ["unclear/onom", "ungram"]:
-
-
+        if orig != target or token.get("target_comments") in ["unclear/onom", "ungram"]:
             if orig.endswith("|"):
-
                 orig_list = []
                 target_list = []
                 split_error_list = []
 
                 orig_list.append(re.sub(r"\|", "", orig))
                 target_list.append(target)
-                split_error_list.extend([err.get("cat_fine") for errors in token.findall("errors") for err in errors.findall("err")])
+                split_error_list.extend(
+                    [
+                        err.get("cat_fine")
+                        for errors in token.findall("errors")
+                        for err in errors.findall("err")
+                    ]
+                )
 
-                index2 = index+1
+                index2 = index + 1
                 while root.findall("token")[index2].get("orig").endswith("|"):
                     current_token = root.findall("token")[index2]
                     orig_list.append(re.sub(r"\|", "", current_token.get("orig")))
                     target_list.append(current_token.get("target"))
-                    split_error_list.extend([err.get("cat_fine") for errors in current_token.findall("errors") for err in
-                                errors.findall("err")])
+                    split_error_list.extend(
+                        [
+                            err.get("cat_fine")
+                            for errors in current_token.findall("errors")
+                            for err in errors.findall("err")
+                        ]
+                    )
                     index2 += 1
 
                 current_token = root.findall("token")[index2]
                 orig_list.append(re.sub(r"\|", "", current_token.get("orig")))
                 target_list.append(current_token.get("target"))
-                split_error_list.extend([err.get("cat_fine") for errors in current_token.findall("errors") for err in
-                                         errors.findall("err")])
+                split_error_list.extend(
+                    [
+                        err.get("cat_fine")
+                        for errors in current_token.findall("errors")
+                        for err in errors.findall("err")
+                    ]
+                )
                 index2 += 1
 
-
-                #get instances of merge
+                # get instances of merge
                 full_orig = "".join(orig_list)
                 merge_list = full_orig.split("_")
                 if len(merge_list) > 1:
-
                     for i in range(len(merge_list)):
                         part = merge_list[i]
 
@@ -88,7 +99,7 @@ for file in sorted(os.listdir(corpus_path)):
 
                         if token.get("target_comments") in ["unclear/onom", "ungram"]:
                             error = ET.Element("grammar_error")
-                            error.set("type", token.get("target_comments")+","+merge_type)
+                            error.set("type", token.get("target_comments") + "," + merge_type)
                         else:
                             error = ET.Element("error")
                             error.set("correct", " ".join(target_list))
@@ -112,12 +123,10 @@ for file in sorted(os.listdir(corpus_path)):
                     error.text = full_orig
                     error.tail = " "
 
-
                     errorlist.append(error)
                     index = index2
 
             else:
-
                 merge_list = orig.split("_")
                 for i in range(len(merge_list)):
                     part = merge_list[i]
@@ -132,24 +141,24 @@ for file in sorted(os.listdir(corpus_path)):
 
                     if token.get("target_comments") in ["unclear/onom", "ungram"]:
                         error = ET.Element("grammar_error")
-                        error.set("type", token.get("target_comments")+","+merge_type)
+                        error.set("type", token.get("target_comments") + "," + merge_type)
 
                     else:
                         error = ET.Element("error")
                         error.set("correct", target)
-                        err_cats = [err.get("cat_fine") for errors in token.findall("errors") for err in
-                                    errors.findall("err")]
+                        err_cats = [
+                            err.get("cat_fine")
+                            for errors in token.findall("errors")
+                            for err in errors.findall("err")
+                        ]
                         err_cats = re.sub("merge", merge_type, ",".join(err_cats))
                         error.set("type", err_cats)
-
 
                     error.text = part
                     error.tail = " "
 
-
                     errorlist.append(error)
                 index += 1
-
 
         else:
             if len(errorlist) == 0 and text.text is not None:
@@ -168,6 +177,3 @@ for file in sorted(os.listdir(corpus_path)):
 
 corpus_tree = ET.ElementTree(corpus)
 corpus_tree.write("processed_corpora/litkey_spelling.xml", encoding="unicode")
-
-
-

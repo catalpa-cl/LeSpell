@@ -2,7 +2,9 @@ import csv
 import xml.etree.ElementTree as ET
 
 annotations_file = "raw_corpora/ETS_Corpus_of_Non-Native_Written_English/Annotations.tsv"
-corpus_path_data = "raw_corpora/ETS_Corpus_of_Non-Native_Written_English/data/text/responses/original/"
+corpus_path_data = (
+    "raw_corpora/ETS_Corpus_of_Non-Native_Written_English/data/text/responses/original/"
+)
 
 with open(annotations_file, mode="r", encoding="utf-8") as f:
     content = csv.DictReader(f, delimiter="\t")
@@ -23,17 +25,17 @@ lastend = -1
 text = None
 
 for row in rows:
-    #print(row)
+    # print(row)
     lastTextId = textId
-    textId = row['Filename']
-    offset = row['OffsetSpan']
+    textId = row["Filename"]
+    offset = row["OffsetSpan"]
     start = int(offset.split("-")[0])
     end = int(offset.split("-")[1])
-    type = row['Type']
-    misspelling = row['Misspelling']
-    correction = row['Correction']
+    type = row["Type"]
+    misspelling = row["Misspelling"]
+    correction = row["Correction"]
     print(textId)
-    if (textId == lastTextId):
+    if textId == lastTextId:
         print(textId)
     else:
         # new Text, append all old errors
@@ -45,8 +47,8 @@ for row in rows:
                 text.append(elem)
         errorlist = []
         print("new ID")
-# open new file
-        with open(corpus_path_data+str(textId)+'.txt', mode="r", encoding="utf-8") as f:
+        # open new file
+        with open(corpus_path_data + str(textId) + ".txt", mode="r", encoding="utf-8") as f:
             originalText = f.read()
             print(originalText)
             beforeText = originalText[0:start]
@@ -54,18 +56,18 @@ for row in rows:
         text = ET.SubElement(corpus, "text")
         text.set("id", str(textId))
         text.text = str(beforeText)
-        text.set("lang","en")
+        text.set("lang", "en")
     error = ET.Element("error")
     error.set("correct", str(correction))
     error.set("type", str(type))
     error.text = str(misspelling)
-    if (len(errorlist) != 0):
+    if len(errorlist) != 0:
         lasterror = errorlist[-1]
         lasterror.tail = originalText[lastend:start]
     errorlist.append(error)
     lastend = end
 
-if (len(errorlist) != 0):
+if len(errorlist) != 0:
     lasterror = errorlist[-1]
     lasterror.tail = originalText[lastend:]
 for elem in errorlist:
